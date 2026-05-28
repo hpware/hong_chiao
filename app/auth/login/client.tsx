@@ -26,30 +26,29 @@ export default function Client() {
         <Image
           src={LoginBG}
           alt="Background image"
-          className="fixed inset-0 z-0 object-cover object-center filter blur-sm opacity-50 w-screen h-screen"
+          className="fixed inset-0 z-0 object-cover object-center filter blur-sm opacity-50 w-screen h-screen select-none"
         />
-        <span className="absolute bottom-2 right-2 text-xs text-accent-foreground/70 z-50">
-          {" "}
-          Photo by{" "}
-          <Link
-            href="https://unsplash.com/@tai_jyun?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText"
-            className="hover:text-blue-200 transition-all duration-100 cursor-pointer"
-          >
-            Tai Jyun Chang
-          </Link>{" "}
-          on{" "}
+        <span className="absolute bottom-2 right-2 text-xs text-accent-foreground/70 z-50 select-none">
+          照片來自{" "}
           <Link
             href="https://unsplash.com/photos/mountains-covered-with-fogs-580TcQCVJ_4?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText"
             className="hover:text-blue-200 transition-all duration-100 cursor-pointer"
           >
             Unsplash
-          </Link>{" "}
+          </Link>
+          。{" "}
+          <a
+            href="https://github.com/hpware/hong_chiao"
+            className="hover:text-blue-200 transition-all duration-100 cursor-pointer"
+          >
+            網站 Source Code
+          </a>
         </span>
       </div>
       <div className="absolute inset-0 justify-center items-center flex flex-col">
         <div className="justify-center border-2 rounded-lg p-8 shadow-xl bg-accent/80 z-50">
           <form
-            className="flex flex-col space-y-2"
+            className="flex flex-col space-y-2 select-none"
             onSubmit={(e) => {
               e.preventDefault();
               toast.promise(
@@ -79,6 +78,7 @@ export default function Client() {
                   if (!res.success) {
                     throw new Error(`${res.hdfText}`);
                   }
+                  localStorage.setItem("user", username.toString());
                   router.push("/");
                   return {
                     duration: res.duration,
@@ -101,7 +101,7 @@ export default function Client() {
           >
             <div>
               <LockKeyholeIcon className="w-10 h-1" />
-              <span className="text-2xl">
+              <span className="text-2xl select-text">
                 登入{process.env.NEXT_PUBLIC_SCHOOL_NAME}校務系統反代
               </span>
             </div>
@@ -111,7 +111,7 @@ export default function Client() {
                 <span>學號:</span>
               </label>{" "}
               <Input
-                className="p-1"
+                className="px-3 py-2"
                 type="text"
                 placeholder="Ex: 5xxxxxxx 或 4xxxxxxx"
                 name="username"
@@ -124,7 +124,7 @@ export default function Client() {
               </label>
               <div className="flex flex-row space-x-1">
                 <Input
-                  className="p-1"
+                  className="px-3 py-2"
                   type={displayPassword ? "text" : "password"}
                   name="password"
                 />
@@ -133,14 +133,15 @@ export default function Client() {
                   onClick={() => {
                     setDisplayPassword(!displayPassword);
                   }}
+                  tabIndex={-1}
                 >
-                  {displayPassword ? <EyeClosed /> : <Eye />}
+                  {displayPassword ? <Eye /> : <EyeClosed />}
                 </Button>
               </div>
             </div>
 
             <div className="flex justify-between pt-2 items-center">
-              <span className="text-sm text-accent-foreground/70 items-center">
+              <span className="text-sm text-accent-foreground/70 items-center select-text">
                 伺服器不會儲存您的帳號密碼與 Cookie。
               </span>
               <Button type="submit">登入</Button>

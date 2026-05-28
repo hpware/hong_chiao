@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import LayoutClient from "./layoutClient";
 import { cn } from "@/lib/utils";
+import MainSidebar from "@/components/sidebar";
 
 const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
 
@@ -18,10 +19,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata: Metadata = {
-  title: "Create Next App",
-};
 
 export default function RootLayout({
   children,
@@ -43,6 +40,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col dark">
         <LayoutClient>
+          <MainSidebar />
           {children}
           <Toaster richColors />
         </LayoutClient>
