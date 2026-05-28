@@ -17,7 +17,7 @@ import { Button } from "./ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CalendarDays,
+  ChevronsUpDown,
   ClipboardList,
   LogOut,
   PenLine,
@@ -74,13 +74,11 @@ export default function MainSidebar() {
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="px-2">
-        <SidebarGroup className="py-2">
-          <SidebarGroupLabel className="px-3 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-white/38">
-            請假
-          </SidebarGroupLabel>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>請假</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
+            <SidebarMenu>
               {leaveItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -91,18 +89,10 @@ export default function MainSidebar() {
                       asChild
                       tooltip={item.title}
                       isActive={isActive}
-                      className="h-11 rounded-lg px-3 text-sm text-white/72 hover:bg-white/[0.07] hover:text-white data-active:bg-amber-300 data-active:text-stone-950 data-active:shadow-[0_10px_26px_rgba(251,191,36,0.18)]"
                     >
                       <Link href={item.href}>
-                        <Icon className="size-4.5" />
-                        <span className="flex min-w-0 flex-col gap-0.5">
-                          <span className="truncate font-medium leading-none">
-                            {item.title}
-                          </span>
-                          <span className="truncate text-[0.68rem] leading-none text-current/55 group-data-[collapsible=icon]:hidden">
-                            {item.description}
-                          </span>
-                        </span>
+                        <Icon />
+                        <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -132,6 +122,7 @@ export default function MainSidebar() {
           </Button>
         </div>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }
