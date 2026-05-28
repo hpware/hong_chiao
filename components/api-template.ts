@@ -28,28 +28,10 @@ export const GET = async (request: NextRequest) => {
     const url = new URL(apiUrl);
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     //get vars
-    const params = request.nextUrl.searchParams;
-    const semiYear = params.get("year");
-    const semistry = params.get("sem");
-    if (!(semiYear && semistry)) {
-      statusCode = 400;
-      throw new Error("阿你忘了填 ?year 或(和) ?sem");
-    }
-    if (Number(semiYear) < 1) {
-      statusCode = 400;
-      throw new Error(`有民國${semiYear}嗎`);
-    }
-    if (!(semistry !== "0" && semistry !== "1")) {
-      statusCode = 400;
-      throw new Error(`?sem 只支援 0 或 1`);
-    }
+    //const params = request.nextUrl.searchParams;
+
     const buildURLParams = new URLSearchParams();
-    buildURLParams.append("SemiYear", semiYear);
-    buildURLParams.append("Semistry", semistry);
-    buildURLParams.append("ApplyDateS", "");
-    buildURLParams.append("ApplyDateE", "");
-    buildURLParams.append("ClassDateS", "");
-    buildURLParams.append("ClassDateE", "");
+    buildURLParams.append("example", "example");
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
@@ -65,6 +47,7 @@ export const GET = async (request: NextRequest) => {
       async ({ getListNum, bupString }) => {
         const req = await fetch(getListNum, {
           method: "POST",
+          //method: "GET"
           credentials: "include",
           headers: {
             "X-Requested-With": "XMLHttpRequest",
@@ -88,15 +71,15 @@ export const GET = async (request: NextRequest) => {
         };
       },
       {
-        getListNum: endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21_GetLeaveS"),
+        getListNum: endpoint(apiUrl, "/YB2K/"),
         bupString: buildURLParams.toString(),
       },
     );
 
-    //if (data.failedLogin) {
-    //  statusCode = 401;
-    //  throw new Error("Session expired or invalid. Please log in again.");
-    //}
+    if (data.failedLogin) {
+      statusCode = 401;
+      throw new Error("Session expired or invalid. Please log in again.");
+    }
     return Response.json(data);
   } catch (e: any) {
     console.error(e);

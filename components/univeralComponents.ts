@@ -29,11 +29,6 @@ export async function getBrowserCookies(
       statusCode = 401;
       throw new Error(`No session found: missing ${cookieName}`);
     }
-    console.log(
-      process.env.NODE_ENV === "production" && apiURL.protocol === "https:"
-        ? "https://"
-        : "http://",
-    );
     return {
       name: cookieName,
       value,

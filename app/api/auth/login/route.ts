@@ -109,11 +109,17 @@ export const POST = async (request: NextRequest) => {
           },
           body: formBody,
         });
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const hdfText =
+          doc.querySelector<HTMLInputElement>("#hdfMessage")?.value ?? "";
+
         return {
           status: response.status,
           statusText: response.statusText,
           url: response.url,
-          html: await response.text(),
+          html,
+          hdfText,
         };
       },
       {
@@ -131,6 +137,7 @@ export const POST = async (request: NextRequest) => {
       remoteStatus: loginResult.status,
       statusText: loginResult.statusText,
       url: loginResult.url,
+      hdfText: loginResult.hdfText,
       duration,
     });
     for (const cookie of browserCookies) {
