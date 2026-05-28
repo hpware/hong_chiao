@@ -2,7 +2,7 @@ type: http_request
 model: http_request
 id: rq_ufXuwiuWST
 createdAt: 2026-05-21T14:49:17.146624
-updatedAt: 2026-05-28T05:59:08.384826
+updatedAt: 2026-05-28T07:45:32.429592
 workspaceId: wk_kBzFFovhPR
 folderId: fl_DLVRWYsRD4
 authentication: {}
@@ -14,12 +14,12 @@ body:
       "password": ""
     }
 bodyType: application/json
-description: ""
+description: ''
 headers:
-  - enabled: true
-    name: Content-Type
-    value: application/json
-    id: qFcM02uuzs
+- enabled: true
+  name: Content-Type
+  value: application/json
+  id: qFcM02uuzs
 method: POST
 name: 登入
 sortPriority: 0.0
