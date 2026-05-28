@@ -1,0 +1,13 @@
+type: folder
+model: folder
+id: fl_zbKDBeFwck
+createdAt: 2026-05-27T03:21:35.298836
+updatedAt: 2026-05-28T05:44:10.894987
+workspaceId: wk_kBzFFovhPR
+folderId: null
+authentication: {}
+authenticationType: null
+description: ''
+headers: []
+name: 請假系統
+sortPriority: 1000.0

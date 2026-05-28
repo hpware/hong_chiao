@@ -1,0 +1,13 @@
+type: folder
+model: folder
+id: fl_DLVRWYsRD4
+createdAt: 2026-05-27T03:21:06.975312
+updatedAt: 2026-05-28T05:44:10.891469
+workspaceId: wk_kBzFFovhPR
+folderId: null
+authentication: {}
+authenticationType: null
+description: ''
+headers: []
+name: 登入 / 登出
+sortPriority: 0.0
