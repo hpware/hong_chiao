@@ -9,6 +9,18 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function redirectToLogin(request: NextRequest) {
+  const response = NextResponse.redirect(new URL("/auth/login", request.url));
+
+  for (const cookieName of authCookieNames) {
+    response.cookies.delete(cookieName);
+  }
+
+  response.cookies.delete("ssLoginForLDAP");
+
+  return response;
+}
+
 export const GET = async (request: NextRequest) => {
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
@@ -29,7 +41,7 @@ export const GET = async (request: NextRequest) => {
       const value = request.cookies.get(cookieName)?.value;
 
       if (value === undefined) {
-        throw new Error("No session found");
+        throw new Error(`No session found: missing ${cookieName}`);
       }
 
       return {
@@ -88,21 +100,10 @@ export const GET = async (request: NextRequest) => {
       throw new Error(`Logout failed with status ${logoutResult.status}`);
     }
 
-    const response = NextResponse.json({
-      message: "Logout successful",
-      details: logoutResult,
-    });
-
-    for (const cookieName of authCookieNames) {
-      response.cookies.delete(cookieName);
-    }
-
-    return response;
+    return redirectToLogin(request);
   } catch (error: unknown) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Logout failed" },
-      { status: 400 },
-    );
+    console.error(error);
+    return redirectToLogin(request);
   } finally {
     await context?.close();
     await browser?.close();
