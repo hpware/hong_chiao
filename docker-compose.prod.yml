@@ -1,0 +1,8 @@
+services:
+  service:
+    image: ghcr.io/hpware/hong_chiao:latest
+    ports:
+      - "10419:3000"
+    environment:
+      API_URL: ${API_URL}
+      NEXT_PUBLIC_SCHOOL_NAME: ${NEXT_PUBLIC_SCHOOL_NAME}

@@ -42,7 +42,6 @@ export const GET = async (request: NextRequest) => {
     await page.goto(endpoint(apiUrl, "/"), {
       waitUntil: "domcontentloaded",
     });
-    console.log(await page.title());
     const data = await page.evaluate(
       async ({ getListNum, bupString }) => {
         const req = await fetch(getListNum, {
