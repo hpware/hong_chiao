@@ -10,7 +10,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function redirectToLogin(request: NextRequest) {
-  const response = NextResponse.redirect(new URL("/auth/login", request.url));
+  const response = NextResponse.redirect(
+    new URL("/auth/login", process.env.NEXT_PUBLIC_APP_URL),
+  );
 
   for (const cookieName of authCookieNames) {
     response.cookies.delete(cookieName);

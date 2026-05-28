@@ -1,8 +1,23 @@
 "use client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import Table from "@/components/table";
+import { useMemo } from "react";
+
+type LeaveRow = {
+  LeaveTitle?: string;
+  ClassDate?: string;
+  endDate?: string;
+  leaveDays?: number | string;
+  reason?: string;
+};
+
+type LeaveResponse = {
+  data?: LeaveRow[];
+};
+
 export default function Page() {
-  const { data } = useQuery({
+  const { data } = useQuery<LeaveResponse>({
     queryKey: ["leaveData"],
     queryFn: async () => {
       const convertYear = await fetch(
@@ -19,5 +34,35 @@ export default function Page() {
       return response.json();
     },
   });
-  return <div></div>;
+  const memoedData = useMemo(() => {
+    const leaveRows = Array.isArray(data?.data) ? data.data : [];
+
+    return leaveRows.flatMap((item) => {
+      const leaveDays = Number(item.leaveDays);
+      if (leaveDays <= 0) {
+        return [];
+      }
+      return {
+        ...item,
+        leaveDays,
+      };
+    });
+  }, [data]);
+  return (
+    <div className="pt-2">
+      <span></span>
+      <div className="h-full justify-center p-2">
+        <Table
+          columns={[
+            { header: "請假類別", accessorKey: "LeaveTitle" },
+            { header: "開始日期", accessorKey: "ClassDate" },
+            { header: "結束日期", accessorKey: "endDate" },
+            { header: "請假天數", accessorKey: "leaveDays" },
+            { header: "請假事由", accessorKey: "reason" },
+          ]}
+          data={memoedData || []}
+        />
+      </div>
+    </div>
+  );
 }

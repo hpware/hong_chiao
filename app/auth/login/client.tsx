@@ -38,7 +38,7 @@ export default function Client() {
           </Link>
           。{" "}
           <a
-            href="https://github.com/hpware/hong_chiao"
+            href="https://github.com/hpware/hong_cho"
             className="hover:text-blue-200 transition-all duration-100 cursor-pointer"
           >
             網站 Source Code
@@ -79,7 +79,14 @@ export default function Client() {
                     throw new Error(`${res.hdfText}`);
                   }
                   localStorage.setItem("user", username.toString());
-                  router.push("/");
+                  const nextPath = new URLSearchParams(
+                    window.location.search,
+                  ).get("next");
+                  const finalRedirect =
+                    nextPath?.startsWith("/") && !nextPath.startsWith("//")
+                      ? nextPath
+                      : "/";
+                  router.push(finalRedirect);
                   return {
                     duration: res.duration,
                   };
@@ -100,7 +107,7 @@ export default function Client() {
             }}
           >
             <div>
-              <LockKeyholeIcon className="w-10 h-1" />
+              <LockKeyholeIcon className="w-10 h-10" />
               <span className="text-2xl select-text">
                 登入{process.env.NEXT_PUBLIC_SCHOOL_NAME}校務系統反代
               </span>

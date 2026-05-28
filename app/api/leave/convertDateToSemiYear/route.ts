@@ -4,14 +4,14 @@ export const GET = async (request: NextRequest) => {
   let statusCode = 500;
   try {
     const params = request.nextUrl.searchParams;
-    const year = Number(params.get("year"));
-    const month = Number(params.get("month"));
+    const year = Number(params.get("year")) || new Date().getFullYear();
+    const month = Number(params.get("month")) || new Date().getMonth() + 1;
     if (!(year > 1911 && year < 4000)) {
       statusCode = 400;
       throw new Error("Invalid year input.");
     }
     const calcROCYear = year - 1911;
-    if (!(month > 0 && month < 13)) {
+    if (month !== null && !(month > 0 && month < 13)) {
       statusCode = 400;
       throw new Error("阿一年只有 12 個月內 怎麼會多或少???");
     }

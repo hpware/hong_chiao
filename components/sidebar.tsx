@@ -12,16 +12,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ChevronsUpDown,
   ClipboardList,
   LogOut,
   PenLine,
   School,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -42,6 +43,7 @@ const leaveItems = [
 
 export default function MainSidebar() {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
   const [userId, setUserId] = useState("");
 
   useEffect(() => {
@@ -63,15 +65,28 @@ export default function MainSidebar() {
       className="border-r border-white/10 bg-[linear-gradient(180deg,oklch(0.22_0.03_260)_0%,oklch(0.16_0.018_245)_48%,oklch(0.13_0.012_230)_100%)]"
     >
       <SidebarHeader className="p-4">
-        <Link
-          href="/"
-          className="pt-2 justify-center flex items-center gap-3 rounded-lg group-data-[collapsible=icon]:justify-center"
-        >
-          <School className="size-5" />
-          <span className="min-w-0 group-data-[collapsible=icon]:hidden">
-            {schoolName}校務系統反代
-          </span>
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href="/"
+            onClick={() => setOpenMobile(false)}
+            className="min-w-0 flex flex-1 items-center gap-3 rounded-lg pt-2 group-data-[collapsible=icon]:justify-center"
+          >
+            <School className="size-5 shrink-0" />
+            <span className="min-w-0 truncate group-data-[collapsible=icon]:hidden">
+              {schoolName}校務系統反代
+            </span>
+          </Link>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="md:hidden"
+            aria-label="關閉導覽選單"
+            onClick={() => setOpenMobile(false)}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
@@ -90,7 +105,10 @@ export default function MainSidebar() {
                       tooltip={item.title}
                       isActive={isActive}
                     >
-                      <Link href={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpenMobile(false)}
+                      >
                         <Icon />
                         <span>{item.title}</span>
                       </Link>
@@ -116,7 +134,11 @@ export default function MainSidebar() {
             size="icon-sm"
             className="text-white/58 hover:bg-white/10 hover:text-white group-data-[collapsible=icon]:hidden"
           >
-            <a href="/api/auth/logout" aria-label="登出">
+            <a
+              href="/api/auth/logout"
+              aria-label="登出"
+              onClick={() => setOpenMobile(false)}
+            >
               <LogOut className="size-4" />
             </a>
           </Button>
