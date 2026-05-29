@@ -17,13 +17,7 @@ import {
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ClipboardList,
-  LogOut,
-  PenLine,
-  School,
-  X,
-} from "lucide-react";
+import { ClipboardList, LogOut, PenLine, School, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const leaveItems = [
@@ -69,9 +63,9 @@ export default function MainSidebar() {
           <Link
             href="/"
             onClick={() => setOpenMobile(false)}
-            className="min-w-0 flex flex-1 items-center gap-3 rounded-lg pt-2 group-data-[collapsible=icon]:justify-center"
+            className="min-w-0 flex flex-1 items-center justify-center gap-3 rounded-lg pt-2 group-data-[collapsible=icon]:justify-center"
           >
-            <School className="size-5 shrink-0" />
+            <School className="size-6 shrink-0 md:size-5" />
             <span className="min-w-0 truncate group-data-[collapsible=icon]:hidden">
               {schoolName}校務系統反代
             </span>
@@ -84,7 +78,7 @@ export default function MainSidebar() {
             aria-label="關閉導覽選單"
             onClick={() => setOpenMobile(false)}
           >
-            <X className="size-4" />
+            <X className="size-5" />
           </Button>
         </div>
       </SidebarHeader>
@@ -121,7 +115,7 @@ export default function MainSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 mt-4 border-t border-white/10 justify-between items-center">
+      <SidebarFooter className="p-4 mt-4 border-t border-white/10 items-center">
         <div className="justify-center flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
           <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
             <p className="truncate text-sm font-medium text-white">
@@ -132,14 +126,14 @@ export default function MainSidebar() {
             asChild
             variant="ghost"
             size="icon-sm"
-            className="text-white/58 hover:bg-white/10 hover:text-white group-data-[collapsible=icon]:hidden"
+            className="text-white/60 hover:bg-white/10 hover:text-white group-data-[collapsible=icon]:hidden"
           >
             <a
               href="/api/auth/logout"
               aria-label="登出"
               onClick={() => setOpenMobile(false)}
             >
-              <LogOut className="size-4" />
+              <LogOut className="size-5" />
             </a>
           </Button>
         </div>

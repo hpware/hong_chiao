@@ -55,10 +55,10 @@ export default function Page() {
         <Table
           columns={[
             { header: "請假類別", accessorKey: "LeaveTitle" },
-            { header: "開始日期", accessorKey: "ClassDate" },
-            { header: "結束日期", accessorKey: "endDate" },
+            { header: "上課日期", accessorKey: "ClassDate" },
+            { header: "送出日期", accessorKey: "ApplyDate" },
             { header: "請假天數", accessorKey: "leaveDays" },
-            { header: "請假事由", accessorKey: "reason" },
+            { header: "Objid", accessorKey: "Objid" },
           ]}
           data={memoedData || []}
         />
