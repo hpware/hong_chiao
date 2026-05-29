@@ -117,12 +117,7 @@ export default function Client() {
                 <UserIcon />
                 <span>學號:</span>
               </label>{" "}
-              <Input
-                className="px-3 py-2"
-                type="text"
-                placeholder="Ex: 5xxxxxxx 或 4xxxxxxx"
-                name="username"
-              />
+              <Input className="px-3 py-2" type="text" name="username" />
             </div>
             <div>
               <label className="text-lg flex flex-row space-x-1 items-center">

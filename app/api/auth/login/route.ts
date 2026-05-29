@@ -16,6 +16,17 @@ type CaptchaResponse = Array<unknown> & {
   };
 };
 
+function getHiddenInputValue(html: string, inputId: string) {
+  const inputPattern = new RegExp(
+    `<input\\b(?=[^>]*\\bid=["']${inputId}["'])[^>]*>`,
+    "i",
+  );
+  const inputMatch = html.match(inputPattern);
+  const valueMatch = inputMatch?.[0].match(/\bvalue=["']([^"']*)["']/i);
+
+  return valueMatch?.[1] ?? "";
+}
+
 export const POST = async (request: NextRequest) => {
   const body = (await request.json()) as LoginRequestBody;
 
@@ -59,26 +70,17 @@ export const POST = async (request: NextRequest) => {
       ]);
     }
 
-    const page = await context.newPage();
+    await context.request.get(endpoint(apiUrl, "/YB2K/B2KPortal/Login.aspx"));
 
-    await page.goto(endpoint(apiUrl, "/YB2K/B2KPortal/Login.aspx"), {
-      waitUntil: "domcontentloaded",
-    });
-
-    const captchaJson = (await page.evaluate(
-      async (captchaUrl) => {
-        const response = await fetch(captchaUrl, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "X-Requested-With": "XMLHttpRequest",
-          },
-        });
-
-        return await response.json();
-      },
+    const captchaResponse = await context.request.get(
       endpoint(apiUrl, "/YB2K/B2KPortal/Account/CreateValidateCode"),
-    )) as CaptchaResponse;
+      {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      },
+    );
+    const captchaJson = (await captchaResponse.json()) as CaptchaResponse;
 
     const validateCode = captchaJson[1]?.ValidateCode;
 
@@ -99,35 +101,24 @@ export const POST = async (request: NextRequest) => {
     form.append("ValidateCode", validateCode);
     form.append("ClearLock", "0");
 
-    const loginResult = await page.evaluate(
-      async ({ loginUrl, formBody, b2kportal }) => {
-        const response = await fetch(loginUrl, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: formBody,
-        });
-        const html = await response.text();
-        const doc = new DOMParser().parseFromString(html, "text/html");
-        const hdfText =
-          doc.querySelector<HTMLInputElement>("#hdfMessage")?.value ?? "";
-
-        return {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url,
-          html,
-          hdfText,
-        };
-      },
+    const loginResponse = await context.request.post(
+      endpoint(apiUrl, "/YB2K/B2KPortal/Login.aspx"),
       {
-        b2kportal: endpoint(apiUrl, "/YB2K/B2KPortal/"),
-        loginUrl: endpoint(apiUrl, "/YB2K/B2KPortal/Login.aspx"),
-        formBody: form.toString(),
+        data: form.toString(),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       },
     );
+    const html = await loginResponse.text();
+    const hdfText = getHiddenInputValue(html, "hdfMessage");
+
+    const loginResult = {
+      status: loginResponse.status(),
+      statusText: loginResponse.statusText(),
+      url: loginResponse.url(),
+      hdfText,
+    };
 
     const browserCookies = await context.cookies(origin);
     const duration = Date.now() - startTime;

@@ -19,6 +19,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardList, LogOut, PenLine, School, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 const leaveItems = [
   {
@@ -40,6 +41,10 @@ export default function MainSidebar() {
   const { setOpenMobile } = useSidebar();
   const [userId, setUserId] = useState("");
 
+  if (pathname === "/auth/login") {
+    return null;
+  }
+
   useEffect(() => {
     setUserId(localStorage.getItem("user") || "");
   }, []);
@@ -49,9 +54,27 @@ export default function MainSidebar() {
     [],
   );
 
-  if (pathname === "/auth/login") {
-    return null;
-  }
+  const renewQuery = useQuery({
+    queryKey: ["renewSession"],
+    queryFn: async () => {
+      const response = await fetch("/api/auth/renewTimeoutTimer");
+
+      if (!response.ok) {
+        throw new Error("Failed to renew session");
+      }
+    },
+  });
+  // renew every ten minutes
+  useEffect(() => {
+    const interval = setInterval(
+      () => {
+        renewQuery.refetch();
+      },
+      10 * 60 * 1000,
+    );
+
+    return () => clearInterval(interval);
+  }, [renewQuery]);
 
   return (
     <Sidebar

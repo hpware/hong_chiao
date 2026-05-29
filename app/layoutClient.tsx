@@ -35,7 +35,8 @@ export default function Client({
                   />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
-                      {process.env.NEXT_PUBLIC_SCHOOL_NAME || "校務系統"}反代
+                      {process.env.NEXT_PUBLIC_SCHOOL_NAME || "未知"}
+                      校務系統反代
                     </p>
                   </div>
                 </header>

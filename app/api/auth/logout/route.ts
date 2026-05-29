@@ -60,48 +60,27 @@ export const GET = async (request: NextRequest) => {
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
-    const page = await context.newPage();
-
-    await page.goto(endpoint(apiUrl, "/"), {
-      waitUntil: "domcontentloaded",
-    });
-
-    const logoutResult = await page.evaluate(
-      async ({ reUrlContentUrl, logoutUrl }) => {
-        const headers = {
-          "X-Requested-With": "XMLHttpRequest",
-        };
-
-        await fetch(reUrlContentUrl, {
-          method: "POST",
-          credentials: "include",
-          headers,
-        });
-
-        const response = await fetch(logoutUrl, {
-          method: "POST",
-          credentials: "include",
-          headers,
-        });
-
-        return {
-          ok: response.ok,
-          status: response.status,
-        };
-      },
+    await context.request.post(
+      endpoint(apiUrl, "/YB2K/B2KPortal/B2KPortal/ReUrlContent"),
       {
-        reUrlContentUrl: endpoint(
-          apiUrl,
-          "/YB2K/B2KPortal/B2KPortal/ReUrlContent",
-        ),
-        logoutUrl: endpoint(apiUrl, "/YB2K/B2KPortal/B2KPortal/Logout"),
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
       },
     );
 
-    if (!logoutResult.ok) {
-      throw new Error(`Logout failed with status ${logoutResult.status}`);
-    }
+    const logoutResult = await context.request.post(
+      endpoint(apiUrl, "/YB2K/B2KPortal/B2KPortal/Logout"),
+      {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      },
+    );
 
+    if (!logoutResult.ok()) {
+      throw new Error(`Logout failed with status ${logoutResult.status()}`);
+    }
     return redirectToLogin(request);
   } catch (error: unknown) {
     console.error(error);

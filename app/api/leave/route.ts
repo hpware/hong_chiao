@@ -26,7 +26,9 @@ export const GET = async (request: NextRequest) => {
 
     const apiUrl = rawUrl;
     const url = new URL(apiUrl);
+    statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
+    statusCode = 500;
     //get vars
     const params = request.nextUrl.searchParams;
     const semiYear = params.get("year");
@@ -55,47 +57,36 @@ export const GET = async (request: NextRequest) => {
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
-    const page = await context.newPage();
-
-    await page.goto(endpoint(apiUrl, "/"), {
-      waitUntil: "domcontentloaded",
-    });
-    const data = await page.evaluate(
-      async ({ getListNum, bupString }) => {
-        const req = await fetch(getListNum, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          },
-          body: bupString,
-        });
-        const res = await req.json();
-        if (res.OnNoLogin) {
-          return {
-            failedLogin: true,
-            res: res,
-          };
-        }
-        return {
-          failedLogin: false,
-          status: req.status,
-          // passed results
-          ok: res.IsOK,
-          data: res.LeaveS,
-        };
-      },
+    const response = await context.request.post(
+      endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21_GetLeaveS"),
       {
-        getListNum: endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21_GetLeaveS"),
-        bupString: buildURLParams.toString(),
+        data: buildURLParams.toString(),
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
       },
     );
+    const responseText = await response.text();
+    const leaveResponse = JSON.parse(responseText);
 
-    //if (data.failedLogin) {
-    //  statusCode = 401;
-    //  throw new Error("Session expired or invalid. Please log in again.");
-    //}
+    const data = leaveResponse.OnNoLogin
+      ? {
+          failedLogin: true,
+          res: leaveResponse,
+        }
+      : {
+          failedLogin: false,
+          status: response.status(),
+          // passed results
+          ok: leaveResponse.IsOK,
+          data: leaveResponse.LeaveS,
+        };
+
+    if (data.failedLogin) {
+      statusCode = 401;
+      throw new Error("Session expired or invalid. Please log in again.");
+    }
     return Response.json(data);
   } catch (e: any) {
     console.error(e);

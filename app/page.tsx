@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import Client from "./client";
 
 export default function Page() {
-  return <div></div>;
+  return <Client />;
 }

@@ -26,60 +26,31 @@ export const GET = async (request: NextRequest) => {
 
     const apiUrl = rawUrl;
     const url = new URL(apiUrl);
+    statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
-    //get vars
-    //const params = request.nextUrl.searchParams;
-
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("example", "example");
+    statusCode = 500;
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
-    const page = await context.newPage();
-
-    await page.goto(endpoint(apiUrl, "/"), {
-      waitUntil: "domcontentloaded",
-    });
-    const data = await page.evaluate(
-      async ({ getListNum, bupString }) => {
-        const req = await fetch(getListNum, {
-          method: "POST",
-          //method: "GET"
-          credentials: "include",
-          headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          },
-          body: bupString,
-        });
-        const res = await req.json();
-        if (res.OnNoLogin) {
-          return {
-            failedLogin: true,
-            res: res,
-          };
-        }
-        return {
-          failedLogin: false,
-          status: req.status,
-          // passed results
-          ok: res.IsOK,
-          data: res.LeaveS,
-        };
-      },
+    const response = await context.request.post(
+      endpoint(apiUrl, "/YB2K/B2KPortal/B2KPortal/ReUrlContent"),
       {
-        getListNum: endpoint(apiUrl, "/YB2K/"),
-        bupString: buildURLParams.toString(),
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
       },
     );
-
-    if (data.failedLogin) {
+    const responseText = await response.text();
+    if (responseText !== "OK") {
       statusCode = 401;
       throw new Error("Session expired or invalid. Please log in again.");
     }
-    return Response.json(data);
+    return Response.json({
+      success: responseText === "OK",
+    });
   } catch (e: any) {
     console.error(e);
     return Response.json(

@@ -26,7 +26,9 @@ export const GET = async (request: NextRequest) => {
 
     const apiUrl = rawUrl;
     const url = new URL(apiUrl);
+    statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
+    statusCode = 500;
     //get vars
     //const params = request.nextUrl.searchParams;
 
@@ -37,43 +39,28 @@ export const GET = async (request: NextRequest) => {
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
-    const page = await context.newPage();
-
-    await page.goto(endpoint(apiUrl, "/"), {
-      waitUntil: "domcontentloaded",
+    const response = await context.request.post(endpoint(apiUrl, "/YB2K/"), {
+      data: buildURLParams.toString(),
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
     });
-    const data = await page.evaluate(
-      async ({ getListNum, bupString }) => {
-        const req = await fetch(getListNum, {
-          method: "POST",
-          //method: "GET"
-          credentials: "include",
-          headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          },
-          body: bupString,
-        });
-        const res = await req.json();
-        if (res.OnNoLogin) {
-          return {
-            failedLogin: true,
-            res: res,
-          };
+    const responseText = await response.text();
+    const apiResponse = JSON.parse(responseText);
+
+    const data = apiResponse.OnNoLogin
+      ? {
+          failedLogin: true,
+          res: apiResponse,
         }
-        return {
+      : {
           failedLogin: false,
-          status: req.status,
+          status: response.status(),
           // passed results
-          ok: res.IsOK,
-          data: res.LeaveS,
+          ok: apiResponse.IsOK,
+          data: apiResponse.LeaveS,
         };
-      },
-      {
-        getListNum: endpoint(apiUrl, "/YB2K/"),
-        bupString: buildURLParams.toString(),
-      },
-    );
 
     if (data.failedLogin) {
       statusCode = 401;
