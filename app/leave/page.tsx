@@ -1,15 +1,17 @@
 "use client";
-import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import Table from "@/components/table";
 import { useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Trash2Icon } from "lucide-react";
 
 type LeaveRow = {
+  Objid?: number | string;
   LeaveTitle?: string;
+  ApplyDate?: string;
   ClassDate?: string;
-  endDate?: string;
-  leaveDays?: number | string;
-  reason?: string;
+  Days?: number | string;
+  leaveDays?: number;
 };
 
 type LeaveResponse = {
@@ -38,8 +40,8 @@ export default function Page() {
     const leaveRows = Array.isArray(data?.data) ? data.data : [];
 
     return leaveRows.flatMap((item) => {
-      const leaveDays = Number(item.leaveDays);
-      if (leaveDays <= 0) {
+      const leaveDays = Number(item.Days ?? item.leaveDays);
+      if (!Number.isFinite(leaveDays) || leaveDays <= 0) {
         return [];
       }
       return {
@@ -58,7 +60,19 @@ export default function Page() {
             { header: "上課日期", accessorKey: "ClassDate" },
             { header: "送出日期", accessorKey: "ApplyDate" },
             { header: "請假天數", accessorKey: "leaveDays" },
-            { header: "Objid", accessorKey: "Objid" },
+            {
+              header: "",
+              id: "actions",
+              cell: () => {
+                return (
+                  <div className="flex justify-end">
+                    <Button type="button" variant="destructive">
+                      <Trash2Icon />
+                    </Button>
+                  </div>
+                );
+              },
+            },
           ]}
           data={memoedData || []}
         />

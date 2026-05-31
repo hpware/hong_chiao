@@ -18,7 +18,7 @@ import { Button } from "./ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardList, LogOut, PenLine, School, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 const leaveItems = [
@@ -54,15 +54,20 @@ export default function MainSidebar() {
     [],
   );
 
+  const renewSession = useCallback(async () => {
+    const response = await fetch("/api/auth/renewTimeoutTimer");
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to renew session");
+    }
+
+    return data;
+  }, []);
+
   const renewQuery = useQuery({
     queryKey: ["renewSession"],
-    queryFn: async () => {
-      const response = await fetch("/api/auth/renewTimeoutTimer");
-
-      if (!response.ok) {
-        throw new Error("Failed to renew session");
-      }
-    },
+    queryFn: renewSession,
   });
   // renew every ten minutes
   useEffect(() => {
@@ -74,7 +79,7 @@ export default function MainSidebar() {
     );
 
     return () => clearInterval(interval);
-  }, [renewQuery]);
+  }, [renewQuery.refetch]);
 
   return (
     <Sidebar
