@@ -19,7 +19,10 @@ export const GET = async (request: NextRequest) => {
 
     if (!rawUrl) {
       return NextResponse.json(
-        { error: "Missing API_URL environment variable" },
+        {
+          error:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+        },
         { status: 500 },
       );
     }
@@ -85,9 +88,170 @@ export const GET = async (request: NextRequest) => {
 
     if (data.failedLogin) {
       statusCode = 401;
-      throw new Error("Session expired or invalid. Please log in again.");
+      throw new Error("Session 過期了或無效。請重新登入。");
     }
     return Response.json(data);
+  } catch (e: any) {
+    console.error(e);
+    return Response.json(
+      {
+        error: e.message,
+      },
+      {
+        status: statusCode,
+      },
+    );
+  } finally {
+    await context?.close();
+    await browser?.close();
+  }
+};
+
+export const POST = async (request: NextRequest) => {
+  let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
+  let statusCode = 500;
+
+  try {
+    const body = await request.json();
+    const rawUrl = process.env.API_URL;
+
+    if (!rawUrl) {
+      return NextResponse.json(
+        {
+          error:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+        },
+        { status: 500 },
+      );
+    }
+
+    const apiUrl = rawUrl;
+    const url = new URL(apiUrl);
+    statusCode = 401;
+    const browserCookies = await getBrowserCookies(request, statusCode, url);
+    if (!body.id) {
+      statusCode = 400;
+      throw new Error("`id` 是必須包含的欄位");
+    }
+    if (typeof body.id !== "number") {
+      statusCode = 400;
+      throw new Error("`id` 一定要是數字");
+    }
+    statusCode = 500;
+    const buildURLParams = new URLSearchParams();
+    buildURLParams.append("Objid", body.id);
+
+    browser = await chromium.launch({ headless: true });
+    context = await browser.newContext({ userAgent: USER_AGENT });
+    await context.addCookies(browserCookies);
+
+    const response = await context.request.post(
+      endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21_GetLeaveS"),
+      {
+        data: buildURLParams.toString(),
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+      },
+    );
+    const responseText = await response.text();
+    const leaveResponse = JSON.parse(responseText);
+
+    const data = leaveResponse.OnNoLogin
+      ? {
+          failedLogin: true,
+          res: leaveResponse,
+        }
+      : {
+          failedLogin: false,
+          status: response.status(),
+          // passed results
+          ok: leaveResponse.IsOK,
+          data: leaveResponse.LeaveS,
+        };
+
+    if (data.failedLogin) {
+      statusCode = 401;
+      throw new Error("Session 過期了或無效。請重新登入。");
+    }
+    return Response.json(data);
+  } catch (e: any) {
+    console.error(e);
+    return Response.json(
+      {
+        error: e.message,
+      },
+      {
+        status: statusCode,
+      },
+    );
+  } finally {
+    await context?.close();
+    await browser?.close();
+  }
+};
+
+export const DELETE = async (request: NextRequest) => {
+  let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
+  let statusCode = 500;
+
+  try {
+    const body = await request.json();
+    const rawUrl = process.env.API_URL;
+
+    if (!rawUrl) {
+      return NextResponse.json(
+        {
+          error:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+        },
+        { status: 500 },
+      );
+    }
+
+    const apiUrl = rawUrl;
+    const url = new URL(apiUrl);
+    statusCode = 401;
+    const browserCookies = await getBrowserCookies(request, statusCode, url);
+    if (!body.id) {
+      statusCode = 400;
+      throw new Error("`id` 是必須包含的欄位");
+    }
+    if (typeof body.id !== "number") {
+      statusCode = 400;
+      throw new Error("`id` 一定要是數字");
+    }
+    statusCode = 500;
+    const buildURLParams = new URLSearchParams();
+    buildURLParams.append("Objid", body.id);
+
+    browser = await chromium.launch({ headless: true });
+    context = await browser.newContext({ userAgent: USER_AGENT });
+    await context.addCookies(browserCookies);
+
+    const response = await context.request.post(
+      endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21_DelLeaveApply"),
+      {
+        data: buildURLParams.toString(),
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+      },
+    );
+    const responseText = await response.text();
+    const deleteResponse = JSON.parse(responseText);
+
+    if (deleteResponse.IsOK !== true) {
+      statusCode = 401;
+      throw new Error("Session 過期了或無效。請重新登入。");
+    }
+    return Response.json({
+      success: deleteResponse.IsOK,
+    });
   } catch (e: any) {
     console.error(e);
     return Response.json(

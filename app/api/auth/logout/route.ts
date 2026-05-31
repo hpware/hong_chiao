@@ -9,9 +9,12 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function redirectToLogin(request: NextRequest) {
+function redirectToLogin(request: NextRequest, isExpired = false) {
   const response = NextResponse.redirect(
-    new URL("/auth/login", process.env.NEXT_PUBLIC_APP_URL),
+    new URL(
+      `/auth/login${isExpired ? "?expired=true" : ""}`,
+      process.env.NEXT_PUBLIC_APP_URL,
+    ),
   );
 
   for (const cookieName of authCookieNames) {
@@ -26,17 +29,20 @@ function redirectToLogin(request: NextRequest) {
 export const GET = async (request: NextRequest) => {
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
+  const params = request.nextUrl.searchParams;
+  const isExpired = params.get("expired") === "true";
 
   try {
     const rawUrl = process.env.API_URL;
-
     if (!rawUrl) {
       return NextResponse.json(
-        { error: "Missing API_URL environment variable" },
+        {
+          error:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+        },
         { status: 500 },
       );
     }
-
     const apiUrl = rawUrl;
     const url = new URL(apiUrl);
     const browserCookies = authCookieNames.map((cookieName) => {
@@ -79,12 +85,12 @@ export const GET = async (request: NextRequest) => {
     );
 
     if (!logoutResult.ok()) {
-      throw new Error(`Logout failed with status ${logoutResult.status()}`);
+      throw new Error(`登出失敗，原因： ${logoutResult.status()}`);
     }
-    return redirectToLogin(request);
+    return redirectToLogin(request, isExpired);
   } catch (error: unknown) {
     console.error(error);
-    return redirectToLogin(request);
+    return redirectToLogin(request, isExpired);
   } finally {
     await context?.close();
     await browser?.close();

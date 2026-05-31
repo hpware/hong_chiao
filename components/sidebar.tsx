@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ClipboardList, LogOut, PenLine, School, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -37,6 +37,7 @@ const leaveItems = [
 ];
 
 export default function MainSidebar() {
+  const router = useRouter();
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
   const [userId, setUserId] = useState("");
@@ -55,9 +56,13 @@ export default function MainSidebar() {
   );
 
   const renewSession = useCallback(async () => {
-    const response = await fetch("/api/auth/renewTimeoutTimer");
+    const response = await fetch("/api/auth/renewTimeoutTimer?kick=direct");
     const data = await response.json();
+    if (response.status === 401 || response.status === 307) {
+      // sess expired
 
+      router.push("/api/auth/logout?expired=true");
+    }
     if (!response.ok) {
       throw new Error(data.error || "Failed to renew session");
     }

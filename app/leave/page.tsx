@@ -1,9 +1,10 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Table from "@/components/table";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
+import { toast } from "sonner";
 
 type LeaveRow = {
   Objid?: number | string;
@@ -19,6 +20,7 @@ type LeaveResponse = {
 };
 
 export default function Page() {
+  const queryClient = useQueryClient();
   const { data } = useQuery<LeaveResponse>({
     queryKey: ["leaveData"],
     queryFn: async () => {
@@ -62,11 +64,43 @@ export default function Page() {
             { header: "請假天數", accessorKey: "leaveDays" },
             {
               header: "",
-              id: "actions",
-              cell: () => {
+              id: "Objid",
+              cell: ({ row }) => {
                 return (
                   <div className="flex justify-end">
-                    <Button type="button" variant="destructive">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => {
+                        toast.promise(
+                          async () => {
+                            const objId = Number(row.original.Objid);
+                            const req = await fetch("/api/leave", {
+                              method: "DELETE",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              body: JSON.stringify({
+                                id: objId,
+                              }),
+                            });
+                            const res = await req.json();
+                            if (!res.success) {
+                              throw new Error(res.error || "刪除失敗");
+                            }
+                            queryClient.invalidateQueries({
+                              queryKey: ["leaveData"],
+                            });
+                            return;
+                          },
+                          {
+                            success: "刪除成功!",
+                            loading: "刪除中...",
+                            error: (e) => `刪除失敗 原因: ${e.message}`,
+                          },
+                        );
+                      }}
+                    >
                       <Trash2Icon />
                     </Button>
                   </div>

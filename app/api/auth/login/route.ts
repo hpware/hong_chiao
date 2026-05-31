@@ -41,7 +41,9 @@ export const POST = async (request: NextRequest) => {
 
   if (!rawUrl) {
     return NextResponse.json(
-      { error: "Missing API_URL environment variable" },
+      {
+        error: "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+      },
       { status: 500 },
     );
   }

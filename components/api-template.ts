@@ -19,11 +19,13 @@ export const GET = async (request: NextRequest) => {
 
     if (!rawUrl) {
       return NextResponse.json(
-        { error: "Missing API_URL environment variable" },
+        {
+          error:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+        },
         { status: 500 },
       );
     }
-
     const apiUrl = rawUrl;
     const url = new URL(apiUrl);
     statusCode = 401;
@@ -64,7 +66,7 @@ export const GET = async (request: NextRequest) => {
 
     if (data.failedLogin) {
       statusCode = 401;
-      throw new Error("Session expired or invalid. Please log in again.");
+      throw new Error("Session 過期了或無效。請重新登入。");
     }
     return Response.json(data);
   } catch (e: any) {

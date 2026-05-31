@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CodeXmlIcon,
   Eye,
@@ -11,14 +11,21 @@ import {
   UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import LoginBG from "./login_bg.jpg";
 
 export default function Client() {
   const router = useRouter();
+  const params = useSearchParams();
   const [displayPassword, setDisplayPassword] = useState(false);
+  const isExpired = params.get("expired") === "true";
+
+  useEffect(() => {
+    if (isExpired) toast.error("登入逾時，請重新登入");
+  }, [isExpired]);
+
   return (
     <>
       {/*bg */}

@@ -69,7 +69,7 @@ export default function Client() {
           <span className="">您好!</span>
         </span>
       </div>
-      <div className="grid gap-3 px-7 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 px-7 sm:grid-cols-2 lg:grid-cols-3 pt-5">
         {summaryCards.map((card) => (
           <div
             key={card.label}
