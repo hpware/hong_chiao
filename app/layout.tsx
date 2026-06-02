@@ -39,10 +39,8 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col dark">
-        <LayoutClient sidebar={<MainSidebar />}>
-          {children}
-          <Toaster richColors />
-        </LayoutClient>
+        <LayoutClient sidebar={<MainSidebar />}>{children}</LayoutClient>
+        <Toaster richColors />
       </body>
     </html>
   );

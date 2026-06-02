@@ -45,7 +45,8 @@ export default function Client() {
           </Link>
           。{" "}
           <a
-            href="https://github.com/hpware/hong_cho"
+            href="https://github.com/hpware/hong_chiao"
+            target="_blank"
             className="hover:text-blue-200 transition-all duration-100 cursor-pointer"
           >
             網站 Source Code

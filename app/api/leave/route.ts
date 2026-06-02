@@ -107,6 +107,7 @@ export const GET = async (request: NextRequest) => {
   }
 };
 
+// 創立
 export const POST = async (request: NextRequest) => {
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
@@ -147,7 +148,7 @@ export const POST = async (request: NextRequest) => {
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21_GetLeaveS"),
+      endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21Detail_SaveLeave"),
       {
         data: buildURLParams.toString(),
         headers: {
@@ -157,26 +158,15 @@ export const POST = async (request: NextRequest) => {
       },
     );
     const responseText = await response.text();
-    const leaveResponse = JSON.parse(responseText);
+    const createResponse = JSON.parse(responseText);
 
-    const data = leaveResponse.OnNoLogin
-      ? {
-          failedLogin: true,
-          res: leaveResponse,
-        }
-      : {
-          failedLogin: false,
-          status: response.status(),
-          // passed results
-          ok: leaveResponse.IsOK,
-          data: leaveResponse.LeaveS,
-        };
-
-    if (data.failedLogin) {
+    if (createResponse.IsOK !== true) {
       statusCode = 401;
       throw new Error("Session 過期了或無效。請重新登入。");
     }
-    return Response.json(data);
+    return Response.json({
+      createResponse,
+    });
   } catch (e: any) {
     console.error(e);
     return Response.json(
