@@ -31,16 +31,34 @@ export const GET = async (request: NextRequest) => {
     statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
-
+    //get vars
+    const params = request.nextUrl.searchParams;
+    const year = params.get("year");
+    const semistry = params.get("semistry");
+    const editing = params.get("editing");
+    const reviewing = params.get("reviewing");
+    const approved = params.get("approved");
+    const notapproved = params.get("notapproved");
+    if (!year || !semistry || isNaN(Number(year)) || isNaN(Number(semistry))) {
+      statusCode = 400;
+      throw new Error(
+        "缺少必要的查詢參數，或參數格式不正確。請提供有效的 year 和 semistry 參數。",
+      );
+    }
     const buildURLParams = new URLSearchParams();
-    buildURLParams.append("ppqmodel[IsStu]", "1");
+    buildURLParams.append("ppYear", year);
+    buildURLParams.append("ppSemi", semistry);
+    buildURLParams.append(
+      "ppStatus",
+      `${editing === "1" ? ",0" : ""}${reviewing === "1" ? ",20" : ""}${approved === "1" ? ",90" : ""}${notapproved === "1" ? ",-90" : ""}`,
+    );
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YB2K/YSKStu/YSKStu/YSK11_Qry"),
+      endpoint(apiUrl, "/YB2K/YEGJStu/YEGJStu/YEGJStu_Qry"),
       {
         data: buildURLParams.toString(),
         headers: {

@@ -4,6 +4,28 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --animate-search-sweep: search-sweep 2.4s ease-in-out infinite;
+
+  @keyframes search-sweep {
+    0% {
+      transform: translate(-14px, -6px) rotate(-12deg);
+    }
+    25% {
+      transform: translate(12px, -10px) rotate(8deg);
+    }
+    50% {
+      transform: translate(14px, 8px) rotate(12deg);
+    }
+    75% {
+      transform: translate(-10px, 10px) rotate(-8deg);
+    }
+    100% {
+      transform: translate(-14px, -6px) rotate(-12deg);
+    }
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

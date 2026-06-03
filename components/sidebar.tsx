@@ -17,22 +17,65 @@ import {
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ClipboardList, LogOut, PenLine, School, User2, X } from "lucide-react";
+import {
+  Award,
+  ClipboardList,
+  DiamondPercentIcon,
+  HandCoins,
+  LogOut,
+  PenLine,
+  School,
+  User2,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-const leaveItems = [
+const navItems = [
   {
-    title: "舊假單",
-    href: "/leave",
-    icon: ClipboardList,
-    description: "查詢請假紀錄",
+    title: "假單",
+    items: [
+      {
+        title: "舊假單",
+        href: "/leave",
+        icon: ClipboardList,
+      },
+      {
+        title: "申請",
+        href: "/leave/new",
+        icon: PenLine,
+      },
+    ],
   },
   {
-    title: "申請",
-    href: "/leave/new",
-    icon: PenLine,
-    description: "建立新的假單",
+    title: "獎學金",
+    items: [
+      {
+        title: "獎學金",
+        href: "/credit-application",
+        icon: HandCoins,
+      },
+    ],
+  },
+  {
+    title: "抵免申請",
+    items: [
+      {
+        title: "抵免申請",
+        href: "/discount",
+        icon: DiamondPercentIcon,
+      },
+    ],
+  },
+  {
+    title: "獎懲",
+    items: [
+      {
+        title: "獎懲",
+        href: "/reward",
+        icon: Award,
+      },
+    ],
   },
 ];
 
@@ -114,36 +157,40 @@ export default function MainSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>請假</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {leaveItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
+        {navItems.map((cat) => {
+          return (
+            <SidebarGroup>
+              <SidebarGroupLabel>{cat.title}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {cat.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
 
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={item.title}
-                      isActive={isActive}
-                      className="transition-all duration-100"
-                    >
-                      <Link
-                        href={item.href}
-                        onClick={() => setOpenMobile(false)}
-                      >
-                        <Icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          tooltip={item.title}
+                          isActive={isActive}
+                          className="transition-all duration-100"
+                        >
+                          <Link
+                            href={item.href}
+                            onClick={() => setOpenMobile(false)}
+                          >
+                            <Icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
       <SidebarFooter className="mt-4 border-t border-white/10 items-center">
@@ -176,7 +223,6 @@ export default function MainSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   );
 }
