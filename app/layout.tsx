@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import LayoutClient from "./layoutClient";
 import { cn } from "@/lib/utils";
 import MainSidebar from "@/components/sidebar";
@@ -40,7 +40,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col dark">
         <LayoutClient sidebar={<MainSidebar />}>{children}</LayoutClient>
-        <Toaster richColors />
+        <Toaster />
       </body>
     </html>
   );

@@ -17,7 +17,7 @@ import {
 import { Button } from "./ui/button";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ClipboardList, LogOut, PenLine, School, X } from "lucide-react";
+import { ClipboardList, LogOut, PenLine, School, User2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -87,16 +87,13 @@ export default function MainSidebar() {
   }, [renewQuery.refetch]);
 
   return (
-    <Sidebar
-      collapsible="icon"
-      className="border-r border-white/10 bg-[linear-gradient(180deg,oklch(0.22_0.03_260)_0%,oklch(0.16_0.018_245)_48%,oklch(0.13_0.012_230)_100%)]"
-    >
+    <Sidebar collapsible="icon" className="border-r border-white/10">
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between gap-3">
           <Link
             href="/"
             onClick={() => setOpenMobile(false)}
-            className="min-w-0 flex flex-1 items-center justify-center gap-3 rounded-lg pt-2 group-data-[collapsible=icon]:justify-center"
+            className="min-w-0 flex flex-1 items-center justify-center gap-3 rounded-lg pt-2 group-data-[collapsible=icon]:justify-center transition-all duration-100"
           >
             <School className="size-6 shrink-0 md:size-5" />
             <span className="min-w-0 truncate group-data-[collapsible=icon]:hidden">
@@ -131,6 +128,7 @@ export default function MainSidebar() {
                       asChild
                       tooltip={item.title}
                       isActive={isActive}
+                      className="transition-all duration-100"
                     >
                       <Link
                         href={item.href}
@@ -148,28 +146,35 @@ export default function MainSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 mt-4 border-t border-white/10 items-center">
-        <div className="justify-center flex items-center gap-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0">
-          <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
-            <p className="truncate text-sm font-medium text-white">
-              {userId || ""}
-            </p>
-          </div>
-          <Button
-            asChild
-            variant="ghost"
-            size="icon-sm"
-            className="text-white/60 hover:bg-white/10 hover:text-white group-data-[collapsible=icon]:hidden"
-          >
-            <a
-              href="/api/auth/logout"
-              aria-label="登出"
-              onClick={() => setOpenMobile(false)}
+      <SidebarFooter className="mt-4 border-t border-white/10 items-center">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              tooltip={userId || "使用者"}
+              isActive={pathname === "/profile"}
+              className="transition-all duration-100"
             >
-              <LogOut className="size-5" />
-            </a>
-          </Button>
-        </div>
+              <Link href={"/profile"} onClick={() => setOpenMobile(false)}>
+                <User2 />
+                <span>{userId || "使用者"}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              tooltip="登出"
+              isActive={false}
+              className="transition-all duration-100"
+            >
+              <a href={"/api/auth/logout"} onClick={() => setOpenMobile(false)}>
+                <LogOut />
+                <span>登出</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

@@ -1,0 +1,93 @@
+import { chromium, type Browser, type BrowserContext } from "playwright";
+import { type NextRequest, NextResponse } from "next/server";
+import {
+  USER_AGENT,
+  endpoint,
+  getBrowserCookies,
+} from "@/components/univeralComponents";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export const GET = async (request: NextRequest) => {
+  let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
+  let statusCode = 500;
+
+  try {
+    const rawUrl = process.env.API_URL;
+
+    if (!rawUrl) {
+      return NextResponse.json(
+        {
+          error:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+        },
+        { status: 500 },
+      );
+    }
+    const apiUrl = rawUrl;
+    const url = new URL(apiUrl);
+    statusCode = 401;
+    const browserCookies = await getBrowserCookies(request, statusCode, url);
+    statusCode = 500;
+    //get vars
+    const params = request.nextUrl.searchParams;
+    const year = params.get("year");
+    const semistry = params.get("semistry");
+    const editing = params.get("editing");
+    const reviewing = params.get("reviewing");
+    const approved = params.get("approved");
+    const notapproved = params.get("notapproved");
+    if (!year || !semistry || isNaN(Number(year)) || isNaN(Number(semistry))) {
+      statusCode = 400;
+      throw new Error(
+        "缺少必要的查詢參數，或參數格式不正確。請提供有效的 year 和 semistry 參數。",
+      );
+    }
+    const buildURLParams = new URLSearchParams();
+    buildURLParams.append("ppYear", year);
+    buildURLParams.append("ppSemi", semistry);
+    buildURLParams.append(
+      "ppStatus",
+      `${editing === "1" ? ",0" : ""}${reviewing === "1" ? ",20" : ""}${approved === "1" ? ",90" : ""}${notapproved === "1" ? ",-90" : ""}`,
+    );
+
+    browser = await chromium.launch({ headless: true });
+    context = await browser.newContext({ userAgent: USER_AGENT });
+    await context.addCookies(browserCookies);
+
+    const response = await context.request.post(endpoint(apiUrl, "/YB2K/"), {
+      data: buildURLParams.toString(),
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+    });
+    const responseText = await response.text();
+    const data = JSON.parse(responseText);
+
+    if (data.OK) {
+      statusCode = 401;
+      throw new Error("Session 過期了或無效。請重新登入。");
+    }
+    return Response.json({
+      success: data.OK,
+      errMsg: data.MSG,
+      data: data.obj.DataList,
+    });
+  } catch (e: any) {
+    console.error(e);
+    return Response.json(
+      {
+        error: e.message,
+      },
+      {
+        status: statusCode,
+      },
+    );
+  } finally {
+    await context?.close();
+    await browser?.close();
+  }
+};
