@@ -1,7 +1,7 @@
 "use client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Table from "@/components/table";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
@@ -20,16 +20,19 @@ type LeaveResponse = {
 };
 
 export default function Page() {
+  const [requestType, setRequestType] = useState<{
+    year: number;
+    sem: number;
+  }>({
+    year: new Date().getFullYear() - 1912,
+    sem: new Date().getMonth() < 6 ? 1 : 2,
+  });
   const queryClient = useQueryClient();
   const { data } = useQuery<LeaveResponse>({
     queryKey: ["leaveData"],
     queryFn: async () => {
-      const convertYear = await fetch(
-        "/api/leave/convertDateToSemiYear?year&month",
-      );
-      const convertYearData = await convertYear.json();
       const response = await fetch(
-        `/api/leave?year=${convertYearData.rocYear}&sem=${convertYearData.semistry}`,
+        `/api/leave?year=${requestType.year}&sem=${requestType.sem}`,
       );
       if (!response.ok) {
         const errorData = await response.json();

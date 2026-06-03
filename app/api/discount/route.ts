@@ -38,7 +38,7 @@ export const GET = async (request: NextRequest) => {
     const editing = params.get("editing");
     const reviewing = params.get("reviewing");
     const approved = params.get("approved");
-    const notapproved = params.get("notapproved");
+    const rejected = params.get("rejected");
     if (!year || !semistry || isNaN(Number(year)) || isNaN(Number(semistry))) {
       statusCode = 400;
       throw new Error(
@@ -50,7 +50,7 @@ export const GET = async (request: NextRequest) => {
     buildURLParams.append("ppSemi", semistry);
     buildURLParams.append(
       "ppStatus",
-      `${editing === "1" ? ",0" : ""}${reviewing === "1" ? ",20" : ""}${approved === "1" ? ",90" : ""}${notapproved === "1" ? ",-90" : ""}`,
+      `${editing === "1" ? ",0" : ""}${reviewing === "1" ? ",20" : ""}${approved === "1" ? ",90" : ""}${rejected === "1" ? ",-90" : ""}`,
     );
 
     browser = await chromium.launch({ headless: true });

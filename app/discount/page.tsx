@@ -1,10 +1,11 @@
 "use client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Table from "@/components/table";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
+import { rejects } from "node:assert";
 
 type LeaveRow = {
   Objid?: number | string;
@@ -20,16 +21,27 @@ type LeaveResponse = {
 };
 
 export default function Page() {
+  const [requestType, setRequestType] = useState<{
+    year: number;
+    sem: number;
+    editing: boolean;
+    reviewing: boolean;
+    passed: boolean;
+    rejected: boolean;
+  }>({
+    year: new Date().getFullYear() - 1912,
+    sem: new Date().getMonth() < 6 ? 1 : 2,
+    editing: true,
+    reviewing: true,
+    passed: true,
+    rejected: true,
+  });
   const queryClient = useQueryClient();
   const { data } = useQuery<LeaveResponse>({
     queryKey: ["leaveData"],
     queryFn: async () => {
-      const convertYear = await fetch(
-        "/api/leave/convertDateToSemiYear?year&month",
-      );
-      const convertYearData = await convertYear.json();
       const response = await fetch(
-        `/api/leave?year=${convertYearData.rocYear}&sem=${convertYearData.semistry}`,
+        `/api/leave?year=${requestType.year}&sem=${requestType.sem}${requestType.editing ? "&editing=true" : ""}${requestType.reviewing ? "&reviewing=true" : ""}${requestType.passed ? "&passed=true" : ""}${requestType.rejected ? "&rejected=true" : ""}`,
       );
       if (!response.ok) {
         const errorData = await response.json();
@@ -58,6 +70,7 @@ export default function Page() {
         <h1 className="text-xl font-semibold">抵免申請</h1>
         <p className="text-sm text-muted-foreground">功能尚未完成。</p>
       </div>{" "}
+      <form className="flex items-center space-x-4 p-2"></form>
       <div className="h-full justify-center p-2">
         <Table
           columns={[
