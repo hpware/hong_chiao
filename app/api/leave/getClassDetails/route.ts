@@ -39,7 +39,7 @@ export const GET = async (request: NextRequest) => {
     const semistry = params.get("semi");
     if (!start || !end || !year || !semistry) {
       statusCode = 400;
-      throw new Error("需要 start, end, year, semistry 的變數。");
+      throw new Error("需要 start, end, year, semi 的變數。");
     }
     const parsedStartDate = new Date(start).toLocaleDateString("zh-TW", {
       year: "numeric",
@@ -66,7 +66,7 @@ export const GET = async (request: NextRequest) => {
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21_GetDatePaiKeS"),
+      endpoint(apiUrl, "/YSD21/YSD21/YSD21_GetDatePaiKeS"),
       {
         data: buildURLParams.toString(),
         headers: {

@@ -72,17 +72,32 @@ export const POST = async (request: NextRequest) => {
       ]);
     }
 
-    await context.request.get(endpoint(apiUrl, "/YB2K/B2KPortal/Login.aspx"));
+    await context.request.get(endpoint(apiUrl, "/B2KPortal/Login.aspx"));
 
     const captchaResponse = await context.request.get(
-      endpoint(apiUrl, "/YB2K/B2KPortal/Account/CreateValidateCode"),
+      endpoint(apiUrl, "/B2KPortal/Account/CreateValidateCode"),
       {
         headers: {
           "X-Requested-With": "XMLHttpRequest",
         },
       },
     );
-    const captchaJson = (await captchaResponse.json()) as CaptchaResponse;
+    const captchaText = await captchaResponse.text();
+    let captchaJson: CaptchaResponse;
+
+    try {
+      captchaJson = JSON.parse(captchaText) as CaptchaResponse;
+    } catch {
+      return NextResponse.json(
+        {
+          error: "Captcha endpoint did not return JSON",
+          remoteStatus: captchaResponse.status(),
+          url: captchaResponse.url(),
+          bodyPreview: captchaText.slice(0, 200),
+        },
+        { status: 502 },
+      );
+    }
 
     const validateCode = captchaJson[1]?.ValidateCode;
 
@@ -104,7 +119,7 @@ export const POST = async (request: NextRequest) => {
     form.append("ClearLock", "0");
 
     const loginResponse = await context.request.post(
-      endpoint(apiUrl, "/YB2K/B2KPortal/Login.aspx"),
+      endpoint(apiUrl, "/B2KPortal/Login.aspx"),
       {
         data: form.toString(),
         headers: {
@@ -126,7 +141,7 @@ export const POST = async (request: NextRequest) => {
     const duration = Date.now() - startTime;
     const nextResponse = NextResponse.json({
       success:
-        loginResult.url === endpoint(apiUrl, "/YB2K/B2KPortal/") ? true : false,
+        loginResult.url === endpoint(apiUrl, "/B2KPortal/") ? true : false,
       remoteStatus: loginResult.status,
       statusText: loginResult.statusText,
       url: loginResult.url,

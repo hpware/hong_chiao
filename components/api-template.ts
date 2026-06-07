@@ -41,7 +41,7 @@ export const GET = async (request: NextRequest) => {
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
-    const response = await context.request.post(endpoint(apiUrl, "/YB2K/"), {
+    const response = await context.request.post(endpoint(apiUrl, "/"), {
       data: buildURLParams.toString(),
       headers: {
         "X-Requested-With": "XMLHttpRequest",

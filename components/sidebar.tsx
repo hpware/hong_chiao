@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
+import { useTheme } from "@/components/theme-provider";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -23,8 +24,10 @@ import {
   DiamondPercentIcon,
   HandCoins,
   LogOut,
+  Moon,
   PenLine,
   School,
+  Sun,
   User2,
   X,
 } from "lucide-react";
@@ -80,14 +83,19 @@ const navItems = [
 ];
 
 export default function MainSidebar() {
-  const router = useRouter();
   const pathname = usePathname();
-  const { setOpenMobile } = useSidebar();
-  const [userId, setUserId] = useState("");
 
   if (pathname === "/auth/login") {
     return null;
   }
+
+  return <MainSidebarContent pathname={pathname} />;
+}
+
+function MainSidebarContent({ pathname }: { pathname: string }) {
+  const router = useRouter();
+  const { setOpenMobile } = useSidebar();
+  const [userId, setUserId] = useState("");
 
   useEffect(() => {
     setUserId(localStorage.getItem("user") || "");
@@ -111,7 +119,7 @@ export default function MainSidebar() {
     }
 
     return data;
-  }, []);
+  }, [router]);
 
   const renewQuery = useQuery({
     queryKey: ["renewSession"],
@@ -130,7 +138,7 @@ export default function MainSidebar() {
   }, [renewQuery.refetch]);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-white/10">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between gap-3">
           <Link
@@ -159,7 +167,7 @@ export default function MainSidebar() {
       <SidebarContent>
         {navItems.map((cat) => {
           return (
-            <SidebarGroup>
+            <SidebarGroup key={cat.title}>
               <SidebarGroupLabel>{cat.title}</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
@@ -193,9 +201,12 @@ export default function MainSidebar() {
         })}
       </SidebarContent>
 
-      <SidebarFooter className="mt-4 border-t border-white/10 items-center">
-        <SidebarMenu>
-          <SidebarMenuItem>
+      <SidebarFooter className="mt-4 w-full items-stretch border-t border-sidebar-border">
+        <SidebarMenu className="w-full">
+          <SidebarMenuItem className="w-full">
+            <SidebarThemeToggle />
+          </SidebarMenuItem>
+          <SidebarMenuItem className="w-full">
             <SidebarMenuButton
               asChild
               tooltip={userId || "使用者"}
@@ -208,7 +219,7 @@ export default function MainSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
+          <SidebarMenuItem className="w-full">
             <SidebarMenuButton
               asChild
               tooltip="登出"
@@ -224,5 +235,25 @@ export default function MainSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function SidebarThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
+  const label = isDark ? "切換為淺色模式" : "切換為深色模式";
+  const Icon = isDark ? Sun : Moon;
+
+  return (
+    <SidebarMenuButton
+      type="button"
+      tooltip={label}
+      className="w-full transition-all duration-100"
+      onClick={toggleTheme}
+      aria-label={label}
+    >
+      <Icon />
+      <span>{isDark ? "淺色模式" : "深色模式"}</span>
+    </SidebarMenuButton>
   );
 }

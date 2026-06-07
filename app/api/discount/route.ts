@@ -58,7 +58,7 @@ export const GET = async (request: NextRequest) => {
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YB2K/YEGJStu/YEGJStu/YEGJStu_Qry"),
+      endpoint(apiUrl, "/YEGJStu/YEGJStu/YEGJStu_Qry"),
       {
         data: buildURLParams.toString(),
         headers: {

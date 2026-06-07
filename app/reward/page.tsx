@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
+import { getSemesterFromDate } from "@/lib/semester";
 
 type LeaveRow = {
   Objid?: number | string;
@@ -23,10 +24,7 @@ export default function Page() {
   const [requestType, setRequestType] = useState<{
     year: number;
     sem: number;
-  }>({
-    year: new Date().getFullYear() - 1912,
-    sem: new Date().getMonth() < 6 ? 1 : 2,
-  });
+  }>(getSemesterFromDate);
   const queryClient = useQueryClient();
   const { data } = useQuery<LeaveResponse>({
     queryKey: ["leaveData"],

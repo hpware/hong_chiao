@@ -40,7 +40,7 @@ export const GET = async (request: NextRequest) => {
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YB2K/B2KPortal/B2KPortal/ReUrlContent"),
+      endpoint(apiUrl, "/B2KPortal/B2KPortal/ReUrlContent"),
       {
         headers: {
           "X-Requested-With": "XMLHttpRequest",

@@ -61,7 +61,7 @@ export const GET = async (request: NextRequest) => {
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21_GetLeaveS"),
+      endpoint(apiUrl, "/YSD21/YSD21/YSD21_GetLeaveS"),
       {
         data: buildURLParams.toString(),
         headers: {
@@ -148,7 +148,7 @@ export const POST = async (request: NextRequest) => {
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21Detail_SaveLeave"),
+      endpoint(apiUrl, "/YSD21/YSD21/YSD21Detail_SaveLeave"),
       {
         data: buildURLParams.toString(),
         headers: {
@@ -223,7 +223,7 @@ export const DELETE = async (request: NextRequest) => {
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YB2K/YSD21/YSD21/YSD21_DelLeaveApply"),
+      endpoint(apiUrl, "/YSD21/YSD21/YSD21_DelLeaveApply"),
       {
         data: buildURLParams.toString(),
         headers: {

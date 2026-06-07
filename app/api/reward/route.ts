@@ -50,7 +50,7 @@ export const GET = async (request: NextRequest) => {
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YB2K/YSCStu/YSCStu/YSCStuMain_Qry"),
+      endpoint(apiUrl, "/YSCStu/YSCStu/YSCStuMain_Qry"),
       {
         data: buildURLParams.toString(),
         headers: {

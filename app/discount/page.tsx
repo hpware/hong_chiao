@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { rejects } from "node:assert";
+import { getSemesterFromDate } from "@/lib/semester";
 
 type LeaveRow = {
   Objid?: number | string;
@@ -29,8 +30,7 @@ export default function Page() {
     passed: boolean;
     rejected: boolean;
   }>({
-    year: new Date().getFullYear() - 1912,
-    sem: new Date().getMonth() < 6 ? 1 : 2,
+    ...getSemesterFromDate(),
     editing: true,
     reviewing: true,
     passed: true,

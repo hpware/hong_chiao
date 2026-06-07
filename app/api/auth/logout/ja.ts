@@ -21,7 +21,7 @@ export const GET = async (request: NextRequest) => {
       throw new Error("No session found");
     }
     const reqReURLContent = await axios.post(
-      `${process.env.API_URL}/YB2K/B2KPortal/B2KPortal/ReUrlContent`,
+      `${process.env.API_URL}/B2KPortal/B2KPortal/ReUrlContent`,
       {},
       {
         headers: {
@@ -34,7 +34,7 @@ export const GET = async (request: NextRequest) => {
     );
     console.log(reqReURLContent);
     const req = await axios.post(
-      `${process.env.API_URL}/YB2K/B2KPortal/B2KPortal/Logout`,
+      `${process.env.API_URL}/B2KPortal/B2KPortal/Logout`,
       {},
       {
         headers: {

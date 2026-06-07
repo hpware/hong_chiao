@@ -5,6 +5,23 @@ import { Toaster } from "@/components/ui/sonner";
 import LayoutClient from "./layoutClient";
 import { cn } from "@/lib/utils";
 import MainSidebar from "@/components/sidebar";
+import { ThemeProvider } from "@/components/theme-provider";
+import Script from "next/script";
+
+const themeInitScript = `
+(() => {
+  try {
+    const storageKey = "hong-chiao-theme";
+    const storedTheme = window.localStorage.getItem(storageKey);
+    const theme = storedTheme === "light" || storedTheme === "dark" ? storedTheme : "dark";
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+  } catch {
+    document.documentElement.classList.add("dark");
+    document.documentElement.style.colorScheme = "dark";
+  }
+})();
+`;
 
 const geistHeading = Geist({ subsets: ["latin"], variable: "--font-heading" });
 
@@ -28,6 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh_Hans"
+      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",
@@ -38,9 +56,21 @@ export default function RootLayout({
         geistHeading.variable,
       )}
     >
-      <body className="min-h-full flex flex-col dark">
-        <LayoutClient sidebar={<MainSidebar />}>{children}</LayoutClient>
-        <Toaster />
+      <head>
+        {process.env.NODE_ENV === "development" ? (
+          <Script
+            src="//unpkg.com/react-scan/dist/auto.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        ) : null}
+      </head>
+      <body className="min-h-full flex flex-col">
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <ThemeProvider>
+          <LayoutClient sidebar={<MainSidebar />}>{children}</LayoutClient>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

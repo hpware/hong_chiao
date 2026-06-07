@@ -67,7 +67,7 @@ export const GET = async (request: NextRequest) => {
     await context.addCookies(browserCookies);
 
     await context.request.post(
-      endpoint(apiUrl, "/YB2K/B2KPortal/B2KPortal/ReUrlContent"),
+      endpoint(apiUrl, "/B2KPortal/B2KPortal/ReUrlContent"),
       {
         headers: {
           "X-Requested-With": "XMLHttpRequest",
@@ -76,7 +76,7 @@ export const GET = async (request: NextRequest) => {
     );
 
     const logoutResult = await context.request.post(
-      endpoint(apiUrl, "/YB2K/B2KPortal/B2KPortal/Logout"),
+      endpoint(apiUrl, "/B2KPortal/B2KPortal/Logout"),
       {
         headers: {
           "X-Requested-With": "XMLHttpRequest",

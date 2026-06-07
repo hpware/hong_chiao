@@ -8,7 +8,7 @@ export const POST = async (request: NextRequest) => {
   const sysId = request.cookies.get("ASP.NET_SessionId")?.value;
   let allSysId = sysId;
   const getSession = await fetch(
-    `${process.env.API_URL}/YB2K/B2KPortal/Login.aspx`,
+    `${process.env.API_URL}/B2KPortal/Login.aspx`,
     {
       method: "GET",
       headers: {
@@ -30,7 +30,7 @@ export const POST = async (request: NextRequest) => {
     });
   }
   const getCaptchaCode = await fetch(
-    `${process.env.API_URL}/YB2K/B2KPortal/Account/CreateValidateCode`,
+    `${process.env.API_URL}/B2KPortal/Account/CreateValidateCode`,
     {
       method: "GET",
       headers: {
@@ -54,19 +54,16 @@ export const POST = async (request: NextRequest) => {
   console.log(allSysId);
 
   // send login req
-  const response = await fetch(
-    `${process.env.API_URL}/YB2K/B2KPortal/Login.aspx`,
-    {
-      method: "POST",
-      headers: {
-        Cookie: `ASP.NET_SessionId=${allSysId}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
-      },
-      body: formBuilder.toString(),
+  const response = await fetch(`${process.env.API_URL}/B2KPortal/Login.aspx`, {
+    method: "POST",
+    headers: {
+      Cookie: `ASP.NET_SessionId=${allSysId}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
     },
-  );
+    body: formBuilder.toString(),
+  });
 
   const getHTMLResult = await response.text();
   return new Response(

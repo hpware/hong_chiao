@@ -99,7 +99,7 @@ export default function Client() {
                     duration: res.duration,
                   };
                   /*  success:
-                    loginResult.url === endpoint(apiUrl, "/YB2K/B2KPortal/") ? true : false,
+                    loginResult.url === endpoint(apiUrl, "/B2KPortal/") ? true : false,
                   remoteStatus: loginResult.status,
                   statusText: loginResult.statusText,
                   url: loginResult.url,
