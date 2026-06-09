@@ -25,13 +25,14 @@ export async function getBrowserCookies(
   statusCode: number,
   apiURL: URL,
 ) {
-  const data = authCookieNames.map((cookieName) => {
+  return authCookieNames.map((cookieName) => {
     const value = request.cookies.get(cookieName)?.value;
 
     if (value === undefined) {
       statusCode = 401;
       throw new Error(`No session found: missing ${cookieName}`);
     }
+
     return {
       name: cookieName,
       value,
@@ -42,5 +43,27 @@ export async function getBrowserCookies(
       sameSite: "Lax" as const,
     };
   });
-  return data;
+}
+
+export function getRequestCookies(
+  request: NextRequest,
+  apiURL: URL,
+  cookieNames?: readonly string[],
+) {
+  const requestCookies = cookieNames
+    ? cookieNames.flatMap((cookieName) => {
+        const value = request.cookies.get(cookieName)?.value;
+        return value === undefined ? [] : [{ name: cookieName, value }];
+      })
+    : request.cookies.getAll().map(({ name, value }) => ({ name, value }));
+
+  return requestCookies.map(({ name, value }) => ({
+    name,
+    value,
+    domain: apiURL.hostname,
+    path: "/",
+    secure:
+      process.env.NODE_ENV === "production" && apiURL.protocol === "https:",
+    sameSite: "Lax" as const,
+  }));
 }

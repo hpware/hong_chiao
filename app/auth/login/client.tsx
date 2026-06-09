@@ -8,6 +8,7 @@ import {
   EyeClosed,
   LockKeyholeIcon,
   RectangleEllipsisIcon,
+  ShieldCheckIcon,
   UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,9 +16,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import LoginBG from "./login_bg.jpg";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function Client() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useSearchParams();
   const [displayPassword, setDisplayPassword] = useState(false);
   const isExpired = params.get("expired") === "true";
@@ -25,6 +28,15 @@ export default function Client() {
   useEffect(() => {
     if (isExpired) toast.error("登入逾時，請重新登入");
   }, [isExpired]);
+  const { data: getCaptcha } = useQuery({
+    queryKey: ["captcha"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/getCaptcha");
+      if (!res.ok) throw new Error("無法取得驗證碼");
+      toast.success("驗證碼已更新");
+      return res.json();
+    },
+  });
 
   return (
     <>
@@ -64,14 +76,17 @@ export default function Client() {
                   const data = new FormData(e.currentTarget);
                   const username = data.get("username");
                   const password = data.get("password");
+                  const captcha = data.get("captcha");
                   // checks
                   if (
                     username === null ||
                     !username ||
                     password === null ||
-                    !password
+                    !password ||
+                    captcha === null ||
+                    !captcha
                   )
-                    throw new Error("使用者帳戶或密碼不可是空白");
+                    throw new Error("使用者帳戶, 密碼或驗證碼不可是空白");
                   const req = await fetch("/api/auth/login", {
                     method: "POST",
                     headers: {
@@ -80,10 +95,19 @@ export default function Client() {
                     body: JSON.stringify({
                       username,
                       password,
+                      captcha,
                     }),
                   });
                   const res = await req.json();
                   if (!res.success) {
+                    // clear captcha
+                    const captchaInput = e.currentTarget.querySelector(
+                      'input[name="captcha"]',
+                    ) as HTMLInputElement | null;
+                    if (captchaInput) captchaInput.value = "";
+                    queryClient.invalidateQueries({
+                      queryKey: ["captcha"],
+                    });
                     throw new Error(`${res.hdfText}`);
                   }
                   localStorage.setItem("user", username.toString());
@@ -147,6 +171,26 @@ export default function Client() {
                 >
                   {displayPassword ? <Eye /> : <EyeClosed />}
                 </Button>
+              </div>
+              <div>
+                <label className="text-lg flex flex-row space-x-1 items-center">
+                  <ShieldCheckIcon />
+                  <span>驗證碼:</span>
+                </label>
+                <div className="flex flex-row space-x-1 max-w-80">
+                  <Image
+                    src={getCaptcha?.image}
+                    alt="captcha"
+                    width={150}
+                    height={40}
+                    onClick={(e) => {
+                      queryClient.invalidateQueries({
+                        queryKey: ["captcha"],
+                      });
+                    }}
+                  />
+                  <Input className="px-3 py-2" type="text" name="captcha" />
+                </div>{" "}
               </div>
             </div>
 

@@ -1,6 +1,11 @@
 import { chromium } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import { USER_AGENT, endpoint } from "@/components/univeralComponents";
+import {
+  USER_AGENT,
+  endpoint,
+  getRequestCookies,
+} from "@/components/univeralComponents";
+import OpenAI from "openai";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,6 +13,7 @@ export const dynamic = "force-dynamic";
 type LoginRequestBody = {
   username: string;
   password: string;
+  captcha: string;
 };
 
 type CaptchaResponse = Array<unknown> & {
@@ -28,11 +34,12 @@ function getHiddenInputValue(html: string, inputId: string) {
 }
 
 export const POST = async (request: NextRequest) => {
+  let statusCode = 500;
   const body = (await request.json()) as LoginRequestBody;
 
-  if (!body.username || !body.password) {
+  if (!body.username || !body.password || !body.captcha) {
     return NextResponse.json(
-      { error: "Missing username or password" },
+      { error: '缺少 "username", "password" 或 "captcha" 的數值' },
       { status: 400 },
     );
   }
@@ -55,67 +62,29 @@ export const POST = async (request: NextRequest) => {
   const context = await browser.newContext({ userAgent: USER_AGENT });
 
   try {
-    const existingSessionId = request.cookies.get("ASP.NET_SessionId")?.value;
-
-    if (existingSessionId) {
-      const url = new URL(apiUrl);
-      await context.addCookies([
-        {
-          name: "ASP.NET_SessionId",
-          value: existingSessionId,
-          domain: url.hostname,
-          path: "/",
-          httpOnly: true,
-          secure: url.protocol === "https:",
-          sameSite: "Lax",
-        },
-      ]);
+    const requestCookies = getRequestCookies(request, new URL(apiUrl));
+    if (requestCookies.length > 0) {
+      await context.addCookies(requestCookies);
     }
 
-    await context.request.get(endpoint(apiUrl, "/B2KPortal/Login.aspx"));
-
-    const captchaResponse = await context.request.get(
-      endpoint(apiUrl, "/B2KPortal/Account/CreateValidateCode"),
-      {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-        },
-      },
+    const loginPage = await context.request.get(
+      endpoint(apiUrl, "/B2KPortal/Login.aspx"),
     );
-    const captchaText = await captchaResponse.text();
-    let captchaJson: CaptchaResponse;
-
-    try {
-      captchaJson = JSON.parse(captchaText) as CaptchaResponse;
-    } catch {
-      return NextResponse.json(
-        {
-          error: "Captcha endpoint did not return JSON",
-          remoteStatus: captchaResponse.status(),
-          url: captchaResponse.url(),
-          bodyPreview: captchaText.slice(0, 200),
-        },
-        { status: 502 },
-      );
-    }
-
-    const validateCode = captchaJson[1]?.ValidateCode;
-
-    if (!validateCode) {
-      return NextResponse.json(
-        {
-          error: "Could not read ValidateCode from captcha response",
-          captcha: captchaJson,
-        },
-        { status: 502 },
-      );
-    }
+    const loginPageHTML = await loginPage.text();
+    const getHiddenRequestVerificationToken = getHiddenInputValue(
+      loginPageHTML,
+      "__RequestVerificationToken",
+    );
 
     const form = new URLSearchParams();
+    form.append(
+      "__RequestVerificationToken",
+      getHiddenRequestVerificationToken,
+    );
     form.append("LoginMode", "");
     form.append("LoginID", body.username);
     form.append("Password", body.password);
-    form.append("ValidateCode", validateCode);
+    form.append("ValidateCode", body.captcha);
     form.append("ClearLock", "0");
 
     const loginResponse = await context.request.post(
@@ -137,7 +106,7 @@ export const POST = async (request: NextRequest) => {
       hdfText,
     };
 
-    const browserCookies = await context.cookies(origin);
+    const sessionCookies = await context.cookies(origin);
     const duration = Date.now() - startTime;
     const nextResponse = NextResponse.json({
       success:
@@ -148,7 +117,7 @@ export const POST = async (request: NextRequest) => {
       hdfText: loginResult.hdfText,
       duration,
     });
-    for (const cookie of browserCookies) {
+    for (const cookie of sessionCookies) {
       nextResponse.cookies.set(cookie.name, cookie.value, {
         httpOnly: cookie.httpOnly,
         secure: request.nextUrl.protocol === "https:",

@@ -1,18 +1,14 @@
 type: http_request
 model: http_request
-id: rq_ufXuwiuWST
-createdAt: 2026-05-21T14:49:17.146624
-updatedAt: 2026-06-09T15:46:47.806529
+id: rq_XdUTKBf2Cx
+createdAt: 2026-06-09T16:04:58.223783
+updatedAt: 2026-06-09T16:05:11.143833
 workspaceId: wk_kBzFFovhPR
 folderId: fl_DLVRWYsRD4
 authentication: {}
 authenticationType: null
 body:
-  text: |-
-    {
-      "username": "",
-      "password": ""
-      }
+  text: ''
 bodyType: application/json
 description: ''
 headers:
@@ -20,8 +16,8 @@ headers:
   name: Content-Type
   value: application/json
   id: qFcM02uuzs
-method: POST
-name: 登入
-sortPriority: 0.0
-url: http://localhost:3000/api/auth/login
+method: GET
+name: 登入 Copy
+sortPriority: 0.001
+url: http://localhost:3000/api/auth/getCaptcha
 urlParameters: []
