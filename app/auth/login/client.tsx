@@ -71,9 +71,12 @@ export default function Client() {
             className="flex flex-col space-y-2 select-none"
             onSubmit={(e) => {
               e.preventDefault();
+              // Capture the form synchronously: e.currentTarget is reset to null
+              // by React once this handler returns, before the async callback runs.
+              const form = e.currentTarget;
               toast.promise(
                 async () => {
-                  const data = new FormData(e.currentTarget);
+                  const data = new FormData(form);
                   const username = data.get("username");
                   const password = data.get("password");
                   const captcha = data.get("captcha");
@@ -101,7 +104,7 @@ export default function Client() {
                   const res = await req.json();
                   if (!res.success) {
                     // clear captcha
-                    const captchaInput = e.currentTarget.querySelector(
+                    const captchaInput = form.querySelector(
                       'input[name="captcha"]',
                     ) as HTMLInputElement | null;
                     if (captchaInput) captchaInput.value = "";

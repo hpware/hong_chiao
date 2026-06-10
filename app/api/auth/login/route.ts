@@ -22,9 +22,12 @@ type CaptchaResponse = Array<unknown> & {
   };
 };
 
-function getHiddenInputValue(html: string, inputId: string) {
+function getHiddenInputValue(html: string, inputName: string) {
+  // Match the input by either `id` or `name`. The ASP.NET anti-forgery token
+  // (__RequestVerificationToken) is rendered with only a `name` attribute and
+  // no `id`, so matching on `id` alone returns an empty string.
   const inputPattern = new RegExp(
-    `<input\\b(?=[^>]*\\bid=["']${inputId}["'])[^>]*>`,
+    `<input\\b(?=[^>]*\\b(?:id|name)=["']${inputName}["'])[^>]*>`,
     "i",
   );
   const inputMatch = html.match(inputPattern);
@@ -62,7 +65,14 @@ export const POST = async (request: NextRequest) => {
   const context = await browser.newContext({ userAgent: USER_AGENT });
 
   try {
-    const requestCookies = getRequestCookies(request, new URL(apiUrl));
+    // Only restore the session cookie so the captcha (ValidateCode) generated
+    // during getCaptcha is found in the same session. Do NOT restore the stale
+    // __RequestVerificationToken cookie: this route's own GET below establishes
+    // a fresh anti-forgery pair, and re-injecting the old token at path "/"
+    // produces a duplicate cookie that breaks anti-forgery validation.
+    const requestCookies = getRequestCookies(request, new URL(apiUrl), [
+      "ASP.NET_SessionId",
+    ]);
     if (requestCookies.length > 0) {
       await context.addCookies(requestCookies);
     }
@@ -104,10 +114,12 @@ export const POST = async (request: NextRequest) => {
       statusText: loginResponse.statusText(),
       url: loginResponse.url(),
       hdfText,
+      html,
     };
 
     const sessionCookies = await context.cookies(origin);
     const duration = Date.now() - startTime;
+    console.log(html);
     const nextResponse = NextResponse.json({
       success:
         loginResult.url === endpoint(apiUrl, "/B2KPortal/") ? true : false,
