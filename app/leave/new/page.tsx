@@ -5,6 +5,11 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { getSemesterFromDate } from "@/lib/semester";
 
+import {
+  NativeSelect,
+  NativeSelectOptGroup,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
 function formatDateInputValue(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -37,7 +42,20 @@ export default function Page() {
     endDate: string;
   }>(getInitialRequestType);
 
-  const { data } = useQuery({
+  const { data: basicData } = useQuery({
+    queryKey: ["basicData", requestType.year, requestType.sem],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/leave/getBasicInfo?year=${requestType.year}&semi=${requestType.sem}`,
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch leave data");
+      }
+      return response.json();
+    },
+  });
+  const { data: tableData } = useQuery({
     queryKey: ["leaveDateData", requestType],
     queryFn: async () => {
       const response = await fetch(
@@ -50,6 +68,7 @@ export default function Page() {
       return response.json();
     },
   });
+
   return (
     <div className="pt-2">
       <div className="p-2">
@@ -57,7 +76,23 @@ export default function Page() {
         <p className="text-sm text-muted-foreground">送出新假單 :)</p>
       </div>
       <div className="h-full justify-center p-2">
-        <div className="flex w-full flex-col md:flex-row space-y-2">
+        <div className="flex w-full flex-col md:flex-row space-y-2 md:space-x-2">
+          <div>
+            <label className="text-sm">假別</label>
+            <NativeSelect>
+              {basicData?.typesOfLeave.map(
+                (type: { id: string; name: string; warnindDay: string }) => (
+                  <NativeSelectOption key={type.id} value={type.id}>
+                    {type.name}
+                  </NativeSelectOption>
+                ),
+              ) || []}
+            </NativeSelect>
+          </div>
+          <div>
+            <label className="text-sm">事由</label>
+            <Input type="text" placeholder="請輸入請假事由" />
+          </div>
           <div>
             <label className="text-sm">開始日期</label>
             <Input
@@ -101,29 +136,40 @@ export default function Page() {
               },
               {
                 header: "星期",
-                accessorKey: "dayOfWeek",
+                accessorKey: "day",
               },
               {
                 header: "節次",
-                accessorKey: "periods",
+                accessorKey: "table",
                 cell: ({ row }) => {
-                  const periods = row.original.periods;
+                  const periods = row.original.table as {
+                    classIndex: string;
+                    sendData: string | null;
+                    show: boolean;
+                    selected: boolean;
+                  }[];
                   return (
                     <div className="flex flex-wrap gap-1">
-                      {periods.map((period: string, index: number) => (
-                        <span
-                          key={index}
-                          className="rounded bg-secondary px-2 py-1 text-sm"
-                        >
-                          {period}
-                        </span>
-                      ))}
+                      {periods
+                        .filter((period) => period.show)
+                        .map((period) => (
+                          <span
+                            key={period.classIndex}
+                            className={`rounded px-2 py-1 text-sm ${
+                              period.selected
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary"
+                            }`}
+                          >
+                            第{period.classIndex}節
+                          </span>
+                        ))}
                     </div>
                   );
                 },
               },
             ]}
-            data={data?.data || []}
+            data={tableData?.renderItems || []}
           />
         </form>
       </div>

@@ -30,7 +30,7 @@ export default function Client({
               <SidebarInset>
                 <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/70 bg-background/95 px-3 backdrop-blur md:hidden">
                   <SidebarTrigger
-                    className="size-10 border border-border/70 bg-muted/40 text-foreground"
+                    className="size-10 text-foreground"
                     aria-label="開啟導覽選單"
                   />
                   <div className="min-w-0">
