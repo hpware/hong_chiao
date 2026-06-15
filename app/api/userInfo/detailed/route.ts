@@ -32,8 +32,14 @@ export const GET = async (request: NextRequest) => {
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
     //get vars
-    //const params = request.nextUrl.searchParams;
-
+    const params = request.nextUrl.searchParams;
+    const doubleCheck = params.get("areyousure");
+    if (doubleCheck !== "yes") {
+      statusCode = 400;
+      throw new Error(
+        "這個 API 會回傳非常詳細的個人資訊，請確認你真的要使用它。如果確定要使用，請在查詢參數中加入 ?areyousure=yes",
+      );
+    }
     const buildURLParams = new URLSearchParams();
     buildURLParams.append("example", "example");
 
@@ -49,26 +55,14 @@ export const GET = async (request: NextRequest) => {
       },
     });
     const responseText = await response.text();
-    const apiResponse = JSON.parse(responseText);
-
-    const data = apiResponse.OnNoLogin
-      ? {
-          failedLogin: true,
-          res: apiResponse,
-        }
-      : {
-          failedLogin: false,
-          status: response.status(),
-          // passed results
-          success: apiResponse.IsOK,
-          data: apiResponse.LeaveS,
-        };
-
-    if (data.failedLogin) {
-      statusCode = 401;
-      throw new Error("Session 過期了或無效。請重新登入。");
-    }
-    return Response.json(data);
+    const getStudentName =
+      responseText.match(
+        new RegExp('(?<=<span id="lblName" class="">).+?(?=</span>)'),
+      )?.[0] || "";
+    return Response.json({
+      success: true,
+      name: getStudentName,
+    });
   } catch (e: any) {
     console.error(e);
     return Response.json(

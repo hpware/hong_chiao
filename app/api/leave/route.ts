@@ -82,7 +82,7 @@ export const GET = async (request: NextRequest) => {
           failedLogin: false,
           status: response.status(),
           // passed results
-          ok: leaveResponse.IsOK,
+          success: leaveResponse.IsOK,
           data: leaveResponse.LeaveS,
         };
 

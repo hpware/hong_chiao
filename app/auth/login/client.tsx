@@ -28,6 +28,20 @@ export default function Client() {
   useEffect(() => {
     if (isExpired) toast.error("登入逾時，請重新登入");
   }, [isExpired]);
+
+  // The login screen always renders in dark mode regardless of the stored
+  // preference. Restore the user's theme when leaving the page.
+  useEffect(() => {
+    const root = document.documentElement;
+    const wasDark = root.classList.contains("dark");
+    const previousColorScheme = root.style.colorScheme;
+    root.classList.add("dark");
+    root.style.colorScheme = "dark";
+    return () => {
+      root.classList.toggle("dark", wasDark);
+      root.style.colorScheme = previousColorScheme;
+    };
+  }, []);
   const { data: getCaptcha } = useQuery({
     queryKey: ["captcha"],
     queryFn: async () => {
@@ -113,7 +127,6 @@ export default function Client() {
                     });
                     throw new Error(`${res.hdfText}`);
                   }
-                  localStorage.setItem("user", username.toString());
                   const nextPath = new URLSearchParams(
                     window.location.search,
                   ).get("next");

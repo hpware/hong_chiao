@@ -1,34 +1,33 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-
-type LeaveRow = {
-  Objid?: number | string;
-  LeaveTitle?: string;
-  ApplyDate?: string;
-  ClassDate?: string;
-  Days?: number | string;
-  Sections?: number | string;
-  leaveDays?: number;
-};
+import { getSemesterFromDate } from "@/lib/semester";
 
 type LeaveResponse = {
-  data?: LeaveRow[];
+  success: boolean;
+  errMsg: string;
+  data: {
+    leaves: {
+      type: string;
+      data: number;
+    }[];
+    absent: {}[];
+  };
 };
+
 export default function Client() {
   const [userId, setUserId] = useState("");
+  const semester = getSemesterFromDate();
+
   useEffect(() => {
     setUserId(localStorage.getItem("user") || "");
-  });
-  const { data } = useQuery<LeaveResponse>({
-    queryKey: ["leaveData"],
+  }, []);
+
+  const { data: queryData } = useQuery<LeaveResponse>({
+    queryKey: ["homeData", semester.year, semester.sem],
     queryFn: async () => {
-      const convertYear = await fetch(
-        "/api/leave/convertDateToSemiYear?year&month",
-      );
-      const convertYearData = await convertYear.json();
       const response = await fetch(
-        `/api/home/data?year=${convertYearData.rocYear}&sem=${convertYearData.semistry}`,
+        `/api/home/data?year=${semester.year}&semistry=${semester.sem}`,
       );
       if (!response.ok) {
         const errorData = await response.json();
@@ -37,29 +36,44 @@ export default function Client() {
       return response.json();
     },
   });
-  const leaveSummary = useMemo(() => {
-    const leaveRows = Array.isArray(data?.data) ? data.data : [];
+  useEffect(() => {
+    const checkLocalStorage = localStorage.getItem("user");
 
-    return leaveRows.reduce(
-      (summary, item) => {
-        const days = Number(item.Days ?? item.leaveDays);
-        const sections = Number(item.Sections);
+    if (checkLocalStorage) {
+      setUserId(checkLocalStorage);
+    } else {
+      const fetchUserId = async () => {
+        try {
+          const response = await fetch("/api/userInfo/name");
+          if (!response.ok) {
+            throw new Error("Failed to fetch user ID");
+          }
+          const data = await response.json();
+          setUserId(data.name);
+        } catch (error) {
+          console.error("Error fetching user ID:", error);
+        }
+      };
+      fetchUserId();
+    }
+  }, []);
+  const cards = useMemo(() => {
+    const leaveCards =
+      queryData?.data.leaves.map((item) => ({
+        key: item.type,
+        label: item.type,
+        value: item.data,
+      })) ?? [];
 
-        return {
-          days: summary.days + (Number.isFinite(days) && days > 0 ? days : 0),
-          sections:
-            summary.sections +
-            (Number.isFinite(sections) && sections > 0 ? sections : 0),
-        };
+    return [
+      ...leaveCards,
+      {
+        key: "absent-count",
+        label: "缺曠紀錄",
+        value: queryData?.data.absent.length ?? 0,
       },
-      { days: 0, sections: 0 },
-    );
-  }, [data]);
-
-  const summaryCards = [
-    { label: "請假天數", value: leaveSummary.days },
-    { label: "請假節數", value: leaveSummary.sections },
-  ];
+    ];
+  }, [queryData]);
 
   return (
     <div>
@@ -70,9 +84,9 @@ export default function Client() {
         </span>
       </div>
       <div className="grid gap-3 px-7 sm:grid-cols-2 lg:grid-cols-3 pt-5">
-        {summaryCards.map((card) => (
+        {cards.map((card) => (
           <div
-            key={card.label}
+            key={card.key}
             className="rounded-lg border border-border bg-background p-4 shadow-sm"
           >
             <div className="text-sm text-muted-foreground">{card.label}</div>

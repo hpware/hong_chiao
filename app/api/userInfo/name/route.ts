@@ -31,44 +31,36 @@ export const GET = async (request: NextRequest) => {
     statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
-    //get vars
-    //const params = request.nextUrl.searchParams;
-
     const buildURLParams = new URLSearchParams();
     buildURLParams.append("example", "example");
-
+    const startTime = Date.now();
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
-    const response = await context.request.post(endpoint(apiUrl, "/"), {
-      data: buildURLParams.toString(),
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    const response = await context.request.post(
+      endpoint(apiUrl, "/YStuQuery/YStuQuery/YSDStuMain"),
+      {
+        data: buildURLParams.toString(),
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
       },
-    });
+    );
     const responseText = await response.text();
-    const apiResponse = JSON.parse(responseText);
-
-    const data = apiResponse.OnNoLogin
-      ? {
-          failedLogin: true,
-          res: apiResponse,
-        }
-      : {
-          failedLogin: false,
-          status: response.status(),
-          // passed results
-          success: apiResponse.IsOK,
-          data: apiResponse.LeaveS,
-        };
-
-    if (data.failedLogin) {
-      statusCode = 401;
-      throw new Error("Session 過期了或無效。請重新登入。");
-    }
-    return Response.json(data);
+    const getStudentName = (
+      responseText.match(
+        new RegExp(`<label>學生姓名：</label>\\s*<label>([^<]+)</label>`),
+      )?.[0] || ""
+    )
+      .trim()
+      .replace(/<label>學生姓名：<\/label>\s*<label>([^<]+)<\/label>/, "$1");
+    return Response.json({
+      success: true,
+      name: getStudentName,
+      duration: (Date.now() - startTime) / 1000, // in seconds
+    });
   } catch (e: any) {
     console.error(e);
     return Response.json(

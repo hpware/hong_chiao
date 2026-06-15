@@ -98,7 +98,25 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
   const [userId, setUserId] = useState("");
 
   useEffect(() => {
-    setUserId(localStorage.getItem("user") || "");
+    const checkLocalStorage = localStorage.getItem("user");
+
+    if (checkLocalStorage) {
+      setUserId(checkLocalStorage);
+    } else {
+      const fetchUserId = async () => {
+        try {
+          const response = await fetch("/api/userInfo/name");
+          if (!response.ok) {
+            throw new Error("Failed to fetch user ID");
+          }
+          const data = await response.json();
+          setUserId(data.name);
+        } catch (error) {
+          console.error("Error fetching user ID:", error);
+        }
+      };
+      fetchUserId();
+    }
   }, []);
 
   const schoolName = useMemo(

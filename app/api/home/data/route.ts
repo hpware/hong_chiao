@@ -26,6 +26,7 @@ export const GET = async (request: NextRequest) => {
         { status: 500 },
       );
     }
+
     const apiUrl = rawUrl;
     const url = new URL(apiUrl);
     statusCode = 401;
@@ -64,7 +65,7 @@ export const GET = async (request: NextRequest) => {
     const responseText = await response.text();
     const data = JSON.parse(responseText);
 
-    if (data.OK) {
+    if (!data.OK) {
       statusCode = 401;
       throw new Error("Session 過期了或無效。請重新登入。");
     }
