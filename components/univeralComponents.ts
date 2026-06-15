@@ -67,3 +67,17 @@ export function getRequestCookies(
     sameSite: "Lax" as const,
   }));
 }
+
+export function getHiddenInputValue(html: string, inputName: string) {
+  // Match the input by either `id` or `name`. The ASP.NET anti-forgery token
+  // (__RequestVerificationToken) is rendered with only a `name` attribute and
+  // no `id`, so matching on `id` alone returns an empty string.
+  const inputPattern = new RegExp(
+    `<input\\b(?=[^>]*\\b(?:id|name)=["']${inputName}["'])[^>]*>`,
+    "i",
+  );
+  const inputMatch = html.match(inputPattern);
+  const valueMatch = inputMatch?.[0].match(/\bvalue=["']([^"']*)["']/i);
+
+  return valueMatch?.[1] ?? "";
+}

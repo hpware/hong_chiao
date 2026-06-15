@@ -28,7 +28,7 @@ export default function Client() {
       );
       const convertYearData = await convertYear.json();
       const response = await fetch(
-        `/api/leave?year=${convertYearData.rocYear}&sem=${convertYearData.semistry}`,
+        `/api/home/data?year=${convertYearData.rocYear}&sem=${convertYearData.semistry}`,
       );
       if (!response.ok) {
         const errorData = await response.json();

@@ -10,6 +10,7 @@ import {
   NativeSelectOptGroup,
   NativeSelectOption,
 } from "@/components/ui/native-select";
+import { toast } from "sonner";
 function formatDateInputValue(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -68,6 +69,14 @@ export default function Page() {
       return response.json();
     },
   });
+
+  const uploadFiles = () => {
+    toast.promise(async () => {
+      throw new Error(
+        "上傳失敗，你的 Session 可能已被遠端伺服器限制，建議重新登入後再上傳。",
+      );
+    }, {});
+  };
 
   return (
     <div className="pt-2">
