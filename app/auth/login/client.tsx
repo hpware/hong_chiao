@@ -137,6 +137,7 @@ export default function Client() {
                   router.push(finalRedirect);
                   return {
                     duration: res.duration,
+                    changePasswordNotice: res.changePasswordNotice,
                   };
                   /*  success:
                     loginResult.url === endpoint(apiUrl, "/B2KPortal/") ? true : false,
@@ -147,7 +148,7 @@ export default function Client() {
                 },
                 {
                   success: (res) =>
-                    `登入成功! 耗時${Number(res.duration / 1000).toPrecision(2)}秒`,
+                    `登入成功! 耗時${Number(res.duration / 1000).toPrecision(2)}秒${res.changePasswordNotice ? "，另外您的密碼以六個月沒更換，請盡快更換系統密碼。" : ""}`,
                   loading: "登入中...",
                   error: (e) => `錯誤: ${e.message}`,
                 },

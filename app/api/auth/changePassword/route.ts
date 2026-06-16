@@ -9,7 +9,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const GET = async (request: NextRequest) => {
+export const POST = async (request: NextRequest) => {
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
   let statusCode = 500;
@@ -31,8 +31,6 @@ export const GET = async (request: NextRequest) => {
     statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
-    //get vars
-    //const params = request.nextUrl.searchParams;
 
     const buildURLParams = new URLSearchParams();
     buildURLParams.append("example", "example");

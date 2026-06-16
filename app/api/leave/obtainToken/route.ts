@@ -4,21 +4,19 @@ import {
   USER_AGENT,
   endpoint,
   getBrowserCookies,
+  getHiddenInputValue,
 } from "@/components/univeralComponents";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const GET = async (
-  request: NextRequest,
-  websiteContext: { params: { slug: string } },
-) => {
-  const { slug } = await websiteContext.params;
+export const GET = async (request: NextRequest) => {
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
+    const startTime = Date.now();
     const rawUrl = process.env.API_URL;
 
     if (!rawUrl) {
@@ -35,44 +33,35 @@ export const GET = async (
     statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
-    //get vars
     const params = request.nextUrl.searchParams;
-    const requestKey = params.get("key");
-    if (!requestKey) {
-      statusCode = 400;
-      throw new Error("需要 file, key 的變數。");
-    }
-
-    const buildFormData = new FormData();
-    buildFormData.append("__RequestVerificationToken", requestKey);
-    buildFormData.append("ShowFileName", slug);
-    buildFormData.append("FileId", slug);
-    buildFormData.append("PathTag", "SDLeave");
+    const year = params.get("year");
+    const semi = params.get("semi");
+    const buildURLParams = new URLSearchParams();
+    buildURLParams.append("example", "example");
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/DownLoad"),
+      endpoint(apiUrl, "/YSD21/YSD21/YSD21Detail"),
       {
-        data: buildFormData.toString(),
+        data: buildURLParams.toString(),
         headers: {
           "X-Requested-With": "XMLHttpRequest",
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         },
       },
     );
-    const responseBlob = await response.body();
-    const contentDisposition = response.headers()["content-disposition"] || "";
-    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-    const filename = filenameMatch ? filenameMatch[1] : "downloaded_file";
-
-    return new Response(responseBlob, {
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-      },
+    const responseText = await response.text();
+    const getHiddenRequestVerificationToken = getHiddenInputValue(
+      responseText,
+      "__RequestVerificationToken",
+    );
+    return Response.json({
+      success: true,
+      token: getHiddenRequestVerificationToken,
+      duration: (Date.now() - startTime) / 1000, // in seconds
     });
   } catch (e: any) {
     console.error(e);

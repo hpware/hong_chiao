@@ -9,11 +9,8 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const GET = async (
-  request: NextRequest,
-  websiteContext: { params: { slug: string } },
-) => {
-  const { slug } = await websiteContext.params;
+export const POST = async (request: NextRequest) => {
+  const body = await request.json();
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
   let statusCode = 500;
@@ -35,45 +32,31 @@ export const GET = async (
     statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
-    //get vars
-    const params = request.nextUrl.searchParams;
-    const requestKey = params.get("key");
-    if (!requestKey) {
-      statusCode = 400;
-      throw new Error("需要 file, key 的變數。");
-    }
-
     const buildFormData = new FormData();
-    buildFormData.append("__RequestVerificationToken", requestKey);
-    buildFormData.append("ShowFileName", slug);
-    buildFormData.append("FileId", slug);
-    buildFormData.append("PathTag", "SDLeave");
+    buildFormData.append("example", "example");
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
     const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/DownLoad"),
+      endpoint(apiUrl, "/YSD21/YSD21/YSD21_UploadImageFile  "),
       {
-        data: buildFormData.toString(),
+        data: buildFormData,
         headers: {
           "X-Requested-With": "XMLHttpRequest",
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         },
       },
     );
-    const responseBlob = await response.body();
-    const contentDisposition = response.headers()["content-disposition"] || "";
-    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-    const filename = filenameMatch ? filenameMatch[1] : "downloaded_file";
+    const responseText = await response.text();
+    const data = JSON.parse(responseText);
 
-    return new Response(responseBlob, {
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-      },
-    });
+    if (data.failedLogin) {
+      statusCode = 401;
+      throw new Error("Session 過期了或無效。請重新登入。");
+    }
+    return Response.json(data);
   } catch (e: any) {
     console.error(e);
     return Response.json(

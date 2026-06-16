@@ -110,6 +110,7 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
             throw new Error("Failed to fetch user ID");
           }
           const data = await response.json();
+          localStorage.setItem("user", data.name);
           setUserId(data.name);
         } catch (error) {
           console.error("Error fetching user ID:", error);
@@ -228,10 +229,10 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
             <SidebarMenuButton
               asChild
               tooltip={userId || "使用者"}
-              isActive={pathname === "/profile"}
+              isActive={pathname === "/settings"}
               className="transition-all duration-100"
             >
-              <Link href={"/profile"} onClick={() => setOpenMobile(false)}>
+              <Link href={"/settings"} onClick={() => setOpenMobile(false)}>
                 <User2 />
                 <span>{userId || "使用者"}</span>
               </Link>

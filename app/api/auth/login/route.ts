@@ -6,7 +6,6 @@ import {
   getRequestCookies,
   getHiddenInputValue,
 } from "@/components/univeralComponents";
-import OpenAI from "openai";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -102,19 +101,21 @@ export const POST = async (request: NextRequest) => {
       url: loginResponse.url(),
       hdfText,
       html,
+      changePasswordNotice: loginResponse
+        .url()
+        .endsWith("/Account/ChangePassword"),
     };
 
     const sessionCookies = await context.cookies(origin);
     const duration = Date.now() - startTime;
-    console.log(html);
     const nextResponse = NextResponse.json({
-      success:
-        loginResult.url === endpoint(apiUrl, "/B2KPortal/") ? true : false,
+      success: loginResult.url !== endpoint(apiUrl, "/B2KPortal/Login.aspx"),
       remoteStatus: loginResult.status,
       statusText: loginResult.statusText,
       url: loginResult.url,
       hdfText: loginResult.hdfText,
       duration,
+      changePasswordNotice: loginResult.changePasswordNotice,
     });
     for (const cookie of sessionCookies) {
       nextResponse.cookies.set(cookie.name, cookie.value, {

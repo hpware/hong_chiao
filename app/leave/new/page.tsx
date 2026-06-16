@@ -11,6 +11,15 @@ import {
   NativeSelectOption,
 } from "@/components/ui/native-select";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 function formatDateInputValue(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -79,109 +88,124 @@ export default function Page() {
   };
 
   return (
-    <div className="pt-2">
-      <div className="p-2">
-        <h1 className="text-xl font-semibold">新假單</h1>
-        <p className="text-sm text-muted-foreground">送出新假單 :)</p>
-      </div>
-      <div className="h-full justify-center p-2">
-        <div className="flex w-full flex-col md:flex-row space-y-2 md:space-x-2">
-          <div>
-            <label className="text-sm">假別</label>
-            <NativeSelect>
-              {basicData?.typesOfLeave.map(
-                (type: { id: string; name: string; warnindDay: string }) => (
-                  <NativeSelectOption key={type.id} value={type.id}>
-                    {type.name}
-                  </NativeSelectOption>
-                ),
-              ) || []}
-            </NativeSelect>
-          </div>
-          <div>
-            <label className="text-sm">事由</label>
-            <Input type="text" placeholder="請輸入請假事由" />
-          </div>
-          <div>
-            <label className="text-sm">開始日期</label>
-            <Input
-              type="date"
-              value={requestType.startDate}
-              onChange={(e) => {
-                const startDate = e.target.value;
-
-                setRequestType((prev) => ({
-                  ...prev,
-                  ...getSemesterFromDateInput(startDate),
-                  startDate,
-                }));
-              }}
-            />
-          </div>
-          <div>
-            <label className="text-sm">結束日期</label>
-            <Input
-              type="date"
-              value={requestType.endDate}
-              onChange={(e) => {
-                setRequestType((prev) => ({
-                  ...prev,
-                  endDate: e.target.value,
-                }));
-              }}
-            />
-          </div>
+    <>
+      {/*<Dialog defaultOpen={true}>
+        <DialogContent>
+          <DialogTitle className="text-xl">注意!</DialogTitle>
+          <DialogDescription className="text-md">
+            上傳附件功能有時候學校伺服器端沒有儲存的時候，建議重新登入，並在上傳一次
+          </DialogDescription>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button>關閉</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog> */}
+      <div className="pt-2">
+        <div className="p-2">
+          <h1 className="text-xl font-semibold">新假單</h1>
+          <p className="text-sm text-muted-foreground">送出新假單 :)</p>
         </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-          }}
-        >
-          <Table
-            columns={[
-              {
-                header: "日期",
-                accessorKey: "date",
-              },
-              {
-                header: "星期",
-                accessorKey: "day",
-              },
-              {
-                header: "節次",
-                accessorKey: "table",
-                cell: ({ row }) => {
-                  const periods = row.original.table as {
-                    classIndex: string;
-                    sendData: string | null;
-                    show: boolean;
-                    selected: boolean;
-                  }[];
-                  return (
-                    <div className="flex flex-wrap gap-1">
-                      {periods
-                        .filter((period) => period.show)
-                        .map((period) => (
-                          <span
-                            key={period.classIndex}
-                            className={`rounded px-2 py-1 text-sm ${
-                              period.selected
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-secondary"
-                            }`}
-                          >
-                            第{period.classIndex}節
-                          </span>
-                        ))}
-                    </div>
-                  );
+        <div className="h-full justify-center p-2">
+          <div className="flex w-full flex-col md:flex-row space-y-2 md:space-x-2">
+            <div>
+              <label className="text-sm">假別</label>
+              <NativeSelect>
+                {basicData?.typesOfLeave.map(
+                  (type: { id: string; name: string; warnindDay: string }) => (
+                    <NativeSelectOption key={type.id} value={type.id}>
+                      {type.name}
+                    </NativeSelectOption>
+                  ),
+                ) || []}
+              </NativeSelect>
+            </div>
+            <div>
+              <label className="text-sm">事由</label>
+              <Input type="text" placeholder="請輸入請假事由" />
+            </div>
+            <div>
+              <label className="text-sm">開始日期</label>
+              <Input
+                type="date"
+                value={requestType.startDate}
+                onChange={(e) => {
+                  const startDate = e.target.value;
+
+                  setRequestType((prev) => ({
+                    ...prev,
+                    ...getSemesterFromDateInput(startDate),
+                    startDate,
+                  }));
+                }}
+              />
+            </div>
+            <div>
+              <label className="text-sm">結束日期</label>
+              <Input
+                type="date"
+                value={requestType.endDate}
+                onChange={(e) => {
+                  setRequestType((prev) => ({
+                    ...prev,
+                    endDate: e.target.value,
+                  }));
+                }}
+              />
+            </div>
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+          >
+            <Table
+              columns={[
+                {
+                  header: "日期",
+                  accessorKey: "date",
                 },
-              },
-            ]}
-            data={tableData?.renderItems || []}
-          />
-        </form>
+                {
+                  header: "星期",
+                  accessorKey: "day",
+                },
+                {
+                  header: "節次",
+                  accessorKey: "table",
+                  cell: ({ row }) => {
+                    const periods = row.original.table as {
+                      classIndex: string;
+                      sendData: string | null;
+                      show: boolean;
+                      selected: boolean;
+                    }[];
+                    return (
+                      <div className="flex flex-wrap gap-1">
+                        {periods
+                          .filter((period) => period.show)
+                          .map((period) => (
+                            <span
+                              key={period.classIndex}
+                              className={`rounded px-2 py-1 text-sm ${
+                                period.selected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-secondary"
+                              }`}
+                            >
+                              第{period.classIndex}節
+                            </span>
+                          ))}
+                      </div>
+                    );
+                  },
+                },
+              ]}
+              data={tableData?.renderItems || []}
+            />
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
