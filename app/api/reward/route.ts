@@ -48,7 +48,6 @@ export const GET = async (request: NextRequest) => {
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
-
     const response = await context.request.post(
       endpoint(apiUrl, "/YSCStu/YSCStu/YSCStuMain_Qry"),
       {
