@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export const GET = async (
   request: NextRequest,
-  websiteContext: { params: { slug: string } },
+  websiteContext: { params: Promise<{ slug: string }> },
 ) => {
   const { slug } = await websiteContext.params;
   let browser: Browser | undefined;
@@ -68,7 +68,7 @@ export const GET = async (
     const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
     const filename = filenameMatch ? filenameMatch[1] : "downloaded_file";
 
-    return new Response(responseBlob, {
+    return new Response(new Uint8Array(responseBlob), {
       headers: {
         "Content-Type": "application/octet-stream",
         "Content-Disposition": `attachment; filename="${filename}"`,

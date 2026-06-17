@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export const GET = async (
   request: NextRequest,
-  websiteContext: { params: { id: string } },
+  websiteContext: { params: Promise<{ id: string }> },
 ) => {
   const { id } = await websiteContext.params;
   let browser: Browser | undefined;
