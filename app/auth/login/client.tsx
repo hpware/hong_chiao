@@ -46,8 +46,8 @@ export default function Client() {
     queryKey: ["captcha"],
     queryFn: async () => {
       const res = await fetch("/api/auth/getCaptcha");
-      if (!res.ok) throw new Error("無法取得驗證碼");
-      toast.success("驗證碼已更新");
+      if (!res.ok) toast.error("無法取得驗證碼");
+      //toast.success("驗證碼已更新");
       return res.json();
     },
   });

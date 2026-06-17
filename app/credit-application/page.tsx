@@ -56,8 +56,8 @@ export default function Page() {
   return (
     <div className="pt-2">
       <div className="p-2">
-        <h1 className="text-xl font-semibold">假單管理</h1>
-        <p className="text-sm text-muted-foreground">管理你已送出的假單。</p>
+        <h1 className="text-xl font-semibold">獎學金</h1>
+        <p className="text-sm text-muted-foreground">申請獎學金。</p>
       </div>{" "}
       <div className="h-full justify-center p-2">
         <Table
