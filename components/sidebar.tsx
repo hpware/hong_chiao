@@ -23,6 +23,7 @@ import {
   ClipboardList,
   DiamondPercentIcon,
   HandCoins,
+  InfoIcon,
   LogOut,
   Moon,
   PenLine,
@@ -235,6 +236,22 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
               <Link href={"/settings"} onClick={() => setOpenMobile(false)}>
                 <User2 />
                 <span>{userId || "使用者"}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="w-full">
+            <SidebarMenuButton
+              asChild
+              tooltip="關於此平台"
+              isActive={pathname === "/platform/about"}
+              className="transition-all duration-100"
+            >
+              <Link
+                href={"/platform/about"}
+                onClick={() => setOpenMobile(false)}
+              >
+                <InfoIcon />
+                <span>關於此平台</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -4,6 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import Table from "@/components/table";
 import { useMemo } from "react";
 import { ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Input } from "@/components/ui/input";
 
 type CreditApplicationRow = {
   objid: string;
@@ -58,14 +61,14 @@ export default function Page() {
       <div className="p-2">
         <h1 className="text-xl font-semibold">獎學金</h1>
         <p className="text-sm text-muted-foreground">申請獎學金。</p>
-      </div>{" "}
+      </div>
       <div className="h-full justify-center p-2">
+        {/*<div className="flex flex-row justify-end space-x-2 py-4">
+        </div>*/}
         <Table
           columns={[
-            { header: "代碼", accessorKey: "Code" },
             { header: "獎助項目", accessorKey: "Title" },
             { header: "承辦單位", accessorKey: "UnOrgText" },
-            { header: "承辦人", accessorKey: "UnPerText" },
             { header: "開始日期", accessorKey: "StartDate" },
             { header: "結束日期", accessorKey: "EndDate" },
             { header: "上傳期限", accessorKey: "UpLoadDate" },
@@ -74,20 +77,30 @@ export default function Page() {
             {
               header: "連結",
               accessorKey: "URL",
-              cell: ({ row }) =>
-                row.original.URL ? (
-                  <a
-                    href={row.original.URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-primary hover:underline"
+              cell: ({ row }) => (
+                <div className="flex flex-row space-x-2">
+                  {row.original.URL ? (
+                    <Link
+                      href={row.original.URL}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Button className="px-2 py-0 m-0">
+                        學校資訊
+                        <ExternalLink className="size-3.5" />
+                      </Button>
+                    </Link>
+                  ) : (
+                    <span className="text-muted-foreground">無</span>
+                  )}
+                  <Link
+                    href="/credit-application/apply/[id]"
+                    as={`/credit-application/apply/${row.original.Code}`}
                   >
-                    開啟
-                    <ExternalLink className="size-3.5" />
-                  </a>
-                ) : (
-                  <span className="text-muted-foreground">無</span>
-                ),
+                    <Button className="px-2 py-0 m-0">申請</Button>
+                  </Link>
+                </div>
+              ),
             },
           ]}
           data={creditApplicationRows || []}

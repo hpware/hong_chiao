@@ -6,5 +6,5 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   if (!id) {
     notFound();
   }
-  return <Client id={id.toString()} />;
+  return <Client id={id.toString().toUpperCase()} />;
 }
