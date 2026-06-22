@@ -1,7 +1,7 @@
 "use client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Table from "@/components/table";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
@@ -70,42 +70,64 @@ export default function Page() {
               header: "",
               id: "Objid",
               cell: ({ row }) => {
+                const [confirming, setConfirming] = useState(false);
+                const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+                  null,
+                );
+
+                const handleClick = () => {
+                  if (!confirming) {
+                    setConfirming(true);
+                    timeoutRef.current = setTimeout(
+                      () => setConfirming(false),
+                      3000,
+                    );
+                    return;
+                  }
+
+                  if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                    timeoutRef.current = null;
+                  }
+                  setConfirming(false);
+
+                  toast.promise(
+                    async () => {
+                      const objId = Number(row.original.Objid);
+                      const req = await fetch("/api/leave", {
+                        method: "DELETE",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          id: objId,
+                        }),
+                      });
+                      const res = await req.json();
+                      if (!res.success) {
+                        throw new Error(res.error || "刪除失敗");
+                      }
+                      queryClient.invalidateQueries({
+                        queryKey: ["leaveData"],
+                      });
+                      return;
+                    },
+                    {
+                      success: "刪除成功!",
+                      loading: "刪除中...",
+                      error: (e) => `刪除失敗 原因: ${e.message}`,
+                    },
+                  );
+                };
+
                 return (
                   <div className="flex justify-end">
                     <Button
                       type="button"
                       variant="destructive"
-                      onClick={() => {
-                        toast.promise(
-                          async () => {
-                            const objId = Number(row.original.Objid);
-                            const req = await fetch("/api/leave", {
-                              method: "DELETE",
-                              headers: {
-                                "Content-Type": "application/json",
-                              },
-                              body: JSON.stringify({
-                                id: objId,
-                              }),
-                            });
-                            const res = await req.json();
-                            if (!res.success) {
-                              throw new Error(res.error || "刪除失敗");
-                            }
-                            queryClient.invalidateQueries({
-                              queryKey: ["leaveData"],
-                            });
-                            return;
-                          },
-                          {
-                            success: "刪除成功!",
-                            loading: "刪除中...",
-                            error: (e) => `刪除失敗 原因: ${e.message}`,
-                          },
-                        );
-                      }}
+                      onClick={handleClick}
                     >
-                      <Trash2Icon />
+                      {confirming ? "確定?" : <Trash2Icon />}
                     </Button>
                   </div>
                 );

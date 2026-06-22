@@ -1,7 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import Table from "@/components/table";
-import { useState } from "react";
+import { memo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { getSemesterFromDate } from "@/lib/semester";
 
@@ -44,6 +44,42 @@ function getInitialRequestType() {
   };
 }
 
+type Period = {
+  classIndex: string;
+  sendData: string | null;
+  show: boolean;
+  selected: boolean;
+};
+
+const PeriodButton = memo(function PeriodButton({
+  period,
+  onToggle,
+}: {
+  period: Period;
+  onToggle: (period: Period, selected: boolean) => void;
+}) {
+  const [selected, setSelected] = useState(period.selected);
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setSelected((current) => {
+          const nextSelected = !current;
+
+          onToggle(period, nextSelected);
+          return nextSelected;
+        });
+      }}
+      className={`rounded px-2 py-1 text-sm ${
+        selected ? "bg-primary text-primary-foreground" : "bg-secondary"
+      }`}
+    >
+      第{period.classIndex}節
+    </button>
+  );
+});
+
 export default function Page() {
   const [requestType, setRequestType] = useState<{
     year: number;
@@ -51,6 +87,7 @@ export default function Page() {
     startDate: string;
     endDate: string;
   }>(getInitialRequestType);
+  const selectedPeriodsRef = useRef(new Map<string, string>());
 
   const { data: basicData } = useQuery({
     queryKey: ["basicData", requestType.year, requestType.sem],
@@ -80,11 +117,18 @@ export default function Page() {
   });
 
   const uploadFiles = () => {
-    toast.promise(async () => {
-      throw new Error(
-        "上傳失敗，你的 Session 可能已被遠端伺服器限制，建議重新登入後再上傳。",
-      );
-    }, {});
+    toast.promise(
+      async () => {
+        throw new Error(
+          "上傳失敗，你的 Session 可能已被遠端伺服器限制，建議重新登入後再上傳。",
+        );
+      },
+      {
+        success: "上傳成功！",
+        loading: "上傳中...",
+        error: (err) => err.message || "上傳失敗",
+      },
+    );
   };
 
   return (
@@ -108,58 +152,111 @@ export default function Page() {
           <p className="text-sm text-muted-foreground">送出新假單 :)</p>
         </div>
         <div className="h-full justify-center p-2">
-          <div className="flex w-full flex-col md:flex-row space-y-2 md:space-x-2">
-            <div>
-              <label className="text-sm">假別</label>
-              <NativeSelect>
-                {basicData?.typesOfLeave.map(
-                  (type: { id: string; name: string; warnindDay: string }) => (
-                    <NativeSelectOption key={type.id} value={type.id}>
-                      {type.name}
-                    </NativeSelectOption>
-                  ),
-                ) || []}
-              </NativeSelect>
-            </div>
-            <div>
-              <label className="text-sm">事由</label>
-              <Input type="text" placeholder="請輸入請假事由" />
-            </div>
-            <div>
-              <label className="text-sm">開始日期</label>
-              <Input
-                type="date"
-                value={requestType.startDate}
-                onChange={(e) => {
-                  const startDate = e.target.value;
-
-                  setRequestType((prev) => ({
-                    ...prev,
-                    ...getSemesterFromDateInput(startDate),
-                    startDate,
-                  }));
-                }}
-              />
-            </div>
-            <div>
-              <label className="text-sm">結束日期</label>
-              <Input
-                type="date"
-                value={requestType.endDate}
-                onChange={(e) => {
-                  setRequestType((prev) => ({
-                    ...prev,
-                    endDate: e.target.value,
-                  }));
-                }}
-              />
-            </div>
-          </div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              toast.promise(
+                async () => {
+                  const formData = new FormData(e.currentTarget);
+                  const reason = formData.get("reason")?.toString() || "";
+                  const typeOfLeave =
+                    formData.get("typeOfLeave")?.toString() || "";
+
+                  if (!reason) {
+                    throw new Error("請輸入請假事由");
+                  }
+                  if (!typeOfLeave) {
+                    throw new Error("請選擇假別");
+                  }
+                  if (selectedPeriodsRef.current.size === 0) {
+                    throw new Error("請至少選擇一個節次");
+                  }
+
+                  const response = await fetch("/api/leave", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      year: requestType.year,
+                      sem: requestType.sem,
+                      reason,
+                      typeOfLeave,
+                      periods: Array.from(
+                        selectedPeriodsRef.current.values(),
+                      ).map((value) => value),
+                      startDate: requestType.startDate,
+                      endDate: requestType.endDate,
+                    }),
+                  });
+
+                  if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(
+                      errorData.error || "Failed to submit leave request",
+                    );
+                  }
+                },
+                {
+                  success: "假單提交成功！",
+                  loading: "提交中...",
+                  error: (err) => err.message || "假單提交失敗",
+                },
+              );
             }}
           >
+            <div className="flex w-full flex-col md:flex-row space-y-2 md:space-x-2">
+              <div>
+                <label className="text-sm">假別</label>
+                <NativeSelect name="typeOfLeave" defaultValue="">
+                  {basicData?.typesOfLeave.map(
+                    (type: {
+                      id: string;
+                      name: string;
+                      warnindDay: string;
+                    }) => (
+                      <NativeSelectOption key={type.id} value={type.id}>
+                        {type.name}
+                      </NativeSelectOption>
+                    ),
+                  ) || []}
+                </NativeSelect>
+              </div>
+              <div>
+                <label className="text-sm">事由</label>
+                <Input type="text" placeholder="請輸入請假事由" name="reason" />
+              </div>
+              <div>
+                <label className="text-sm">開始日期</label>
+                <Input
+                  type="date"
+                  value={requestType.startDate}
+                  onChange={(e) => {
+                    const startDate = e.target.value;
+
+                    setRequestType((prev) => ({
+                      ...prev,
+                      ...getSemesterFromDateInput(startDate),
+                      startDate,
+                    }));
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-sm">結束日期</label>
+                <Input
+                  type="date"
+                  value={requestType.endDate}
+                  onChange={(e) => {
+                    setRequestType((prev) => ({
+                      ...prev,
+                      endDate: e.target.value,
+                    }));
+                  }}
+                />
+              </div>
+            </div>
+
             <Table
               columns={[
                 {
@@ -174,27 +271,28 @@ export default function Page() {
                   header: "節次",
                   accessorKey: "table",
                   cell: ({ row }) => {
-                    const periods = row.original.table as {
-                      classIndex: string;
-                      sendData: string | null;
-                      show: boolean;
-                      selected: boolean;
-                    }[];
+                    const periods = row.original.table as Period[];
                     return (
                       <div className="flex flex-wrap gap-1">
                         {periods
                           .filter((period) => period.show)
                           .map((period) => (
-                            <span
-                              key={period.classIndex}
-                              className={`rounded px-2 py-1 text-sm ${
-                                period.selected
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-secondary"
-                              }`}
-                            >
-                              第{period.classIndex}節
-                            </span>
+                            <PeriodButton
+                              key={`${row.original.date}:${period.classIndex}:${period.sendData ?? ""}`}
+                              period={period}
+                              onToggle={(nextPeriod, selected) => {
+                                const key = `${row.original.date}:${nextPeriod.classIndex}`;
+
+                                if (selected) {
+                                  selectedPeriodsRef.current.set(
+                                    key,
+                                    `${row.original.date}|${nextPeriod.classIndex}0|${nextPeriod.sendData}`,
+                                  );
+                                } else {
+                                  selectedPeriodsRef.current.delete(key);
+                                }
+                              }}
+                            />
                           ))}
                       </div>
                     );
@@ -203,6 +301,18 @@ export default function Page() {
               ]}
               data={tableData?.renderItems || []}
             />
+            <div className="flex justify-end mt-4 space-x-2">
+              {/*              <Button
+                type="button"
+                className="hover:cursor-pointer"
+                onClick={uploadFiles}
+              >
+                上傳附件
+              </Button> */}
+              <Button type="submit" className="hover:cursor-pointer">
+                送出
+              </Button>
+            </div>
           </form>
         </div>
       </div>
