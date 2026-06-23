@@ -1,3 +1,4 @@
+// can't do this yet, since I dont have the data to make this work.
 "use client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Table from "@/components/table";
@@ -25,6 +26,7 @@ export default function Page() {
     year: number;
     sem: number;
   }>(getSemesterFromDate);
+  const [isDeleting, setIsDeleting] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const { data } = useQuery<LeaveResponse>({
     queryKey: ["leaveData"],
@@ -76,6 +78,10 @@ export default function Page() {
                       type="button"
                       variant="destructive"
                       onClick={() => {
+                        setIsDeleting((prev) => [
+                          ...prev,
+                          String(row.original.Objid),
+                        ]);
                         toast.promise(
                           async () => {
                             const objId = Number(row.original.Objid);
@@ -95,6 +101,9 @@ export default function Page() {
                             queryClient.invalidateQueries({
                               queryKey: ["leaveData"],
                             });
+                            setIsDeleting((prev) => [
+                              ...prev.filter(String(row.original.Objid)),
+                            ]);
                             return;
                           },
                           {

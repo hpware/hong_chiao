@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 export default function Page() {
-  // 請不要看這邊
+  // 請不要看這邊 (hint: YT 影片)
   redirect(
     atob(
       atob(

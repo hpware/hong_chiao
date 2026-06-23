@@ -17,6 +17,10 @@ export default function Client() {
         <section id="password" />
         <ResetPassword />
       </div>
+      <div className="pt-4 pl-2 mr-3">
+        <section id="details" />
+        <ChangeUserInfo />
+      </div>
     </div>
   );
 }
@@ -143,6 +147,38 @@ function ResetPassword() {
           <span>
             注意！新密碼不可跟前三次一樣，並需要包含 8~20 位的英文大小寫與數字
           </span>
+          <Button type="submit">送出</Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ChangeUserInfo() {
+  return (
+    <div className="border rounded p-2">
+      <h3 className="text-md">更改使用者資訊</h3>
+      <form
+        className="flex flex-col space-y-2 mt-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          toast.promise(async () => {
+            const formData = new FormData(e.currentTarget);
+            const oldPassword = formData.get("oldPassword")?.toString() || "";
+            const newPassword = formData.get("newPassword")?.toString() || "";
+            const confirmPassword =
+              formData.get("confirmPassword")?.toString() || "";
+
+            const changePasswordRequest = await fetch(
+              "/api/auth/changePassword",
+              {
+                method: "POST",
+              },
+            );
+          });
+        }}
+      >
+        <div className="flex justify-end text-sm text-muted-foreground">
           <Button type="submit">送出</Button>
         </div>
       </form>
