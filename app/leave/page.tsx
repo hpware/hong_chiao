@@ -3,9 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Table from "@/components/table";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2Icon } from "lucide-react";
+import { InfoIcon, Pen, PencilIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { getSemesterFromDate } from "@/lib/semester";
+import Link from "next/link";
 
 type LeaveRow = {
   Objid?: number | string;
@@ -121,7 +122,17 @@ export default function Page() {
                 };
 
                 return (
-                  <div className="flex justify-end">
+                  <div className="flex justify-end space-x-1">
+                    <Link href={`/leave/req uest/${row.original.Objid}`}>
+                      <Button type="button">
+                        <InfoIcon />
+                      </Button>
+                    </Link>
+                    <Link href={`/leave/request/${row.original.Objid}/edit`}>
+                      <Button type="button">
+                        <PencilIcon />
+                      </Button>
+                    </Link>
                     <Button
                       type="button"
                       variant="destructive"
