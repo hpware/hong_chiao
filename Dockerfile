@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS base
+FROM node:20-alphine AS base
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PNPM_HOME="/pnpm"
@@ -19,7 +19,7 @@ RUN mkdir -p public
 RUN pnpm run build
 
 # prod
-FROM mcr.microsoft.com/playwright:v1.61.0-noble AS runner
+FROM node:20-alphine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -30,6 +30,8 @@ ENV HOSTNAME="0.0.0.0"
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+RUN npx playwright install chrome
 
 EXPOSE 3000
 
