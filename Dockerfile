@@ -1,4 +1,4 @@
-FROM node:20-alphine AS base
+FROM node:20-bookworm-slim AS base
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PNPM_HOME="/pnpm"
@@ -10,6 +10,7 @@ FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
+RUN pnpm dlx playwright install chrome
 
 FROM base AS builder
 WORKDIR /app
@@ -19,7 +20,7 @@ RUN mkdir -p public
 RUN pnpm run build
 
 # prod
-FROM node:20-alphine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -30,9 +31,6 @@ ENV HOSTNAME="0.0.0.0"
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-
-RUN npx playwright install chrome
-
 EXPOSE 3000
 
 CMD ["node", "server.js"]
