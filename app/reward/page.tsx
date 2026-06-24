@@ -78,10 +78,10 @@ export default function Page() {
                       type="button"
                       variant="destructive"
                       onClick={() => {
-                        setIsDeleting((prev) => [
-                          ...prev,
-                          String(row.original.Objid),
-                        ]);
+                        //setIsDeleting((prev) => [
+                        //  ...prev,
+                        //  String(row.original.Objid),
+                        //]);
                         toast.promise(
                           async () => {
                             const objId = Number(row.original.Objid);
@@ -101,9 +101,10 @@ export default function Page() {
                             queryClient.invalidateQueries({
                               queryKey: ["leaveData"],
                             });
-                            setIsDeleting((prev) => [
-                              ...prev.filter(String(row.original.Objid)),
-                            ]);
+                            // work in progress
+                            //setIsDeleting((prev) => [
+                            //  ...prev.filter(String(row.original.Objid)),
+                            //]);
                             return;
                           },
                           {
