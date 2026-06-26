@@ -62,7 +62,7 @@ const navItems = [
     ],
   },
   {
-    title: "抵免申請",
+    title: "就學抵免",
     items: [
       {
         title: "抵免申請",

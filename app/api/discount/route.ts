@@ -31,36 +31,29 @@ export const GET = async (request: NextRequest) => {
     statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
-    //get vars
-    const params = request.nextUrl.searchParams;
-    const year = params.get("year");
-    const semistry = params.get("semistry");
-    const editing = params.get("editing");
-    const reviewing = params.get("reviewing");
-    const approved = params.get("approved");
-    const rejected = params.get("rejected");
-    if (!year || !semistry || isNaN(Number(year)) || isNaN(Number(semistry))) {
-      statusCode = 400;
-      throw new Error(
-        "缺少必要的查詢參數，或參數格式不正確。請提供有效的 year 和 semistry 參數。",
-      );
-    }
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("ppYear", year);
-    buildURLParams.append("ppSemi", semistry);
-    buildURLParams.append(
-      "ppStatus",
-      `${editing === "1" ? ",0" : ""}${reviewing === "1" ? ",20" : ""}${approved === "1" ? ",90" : ""}${rejected === "1" ? ",-90" : ""}`,
-    );
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
+    const buildURLParams = new URLSearchParams();
+    buildURLParams.append("Qmodel", "");
     await context.addCookies(browserCookies);
 
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YEGJStu/YEGJStu/YEGJStu_Qry"),
+    const basicHelpInfo = await context.request.post(
+      endpoint(apiUrl, "/YSJStu/YSJSTU/YSJSTU_QryNotify"),
       {
         data: buildURLParams.toString(),
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+      },
+    );
+    const basicHelpInfoText = await basicHelpInfo.text();
+    const basicHelpInfoData = JSON.parse(basicHelpInfoText);
+
+    const response = await context.request.post(
+      endpoint(apiUrl, "/YSJStu/YSJSTU/YSJStu_PageLoad"),
+      {
         headers: {
           "X-Requested-With": "XMLHttpRequest",
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -70,20 +63,17 @@ export const GET = async (request: NextRequest) => {
     const responseText = await response.text();
     const data = JSON.parse(responseText);
 
-    if (!data.OK) {
+    if (!(basicHelpInfoData.IsOK && data.IsOK)) {
       statusCode = 401;
       throw new Error(data.MSG || "Session 過期了或無效。請重新登入。");
     }
-    const rows = Array.isArray(data.obj)
-      ? data.obj
-      : Array.isArray(data.obj?.DataList)
-        ? data.obj.DataList
-        : [];
 
     return Response.json({
       success: data.OK,
       errMsg: data.MSG,
-      data: rows,
+      data: {
+        note: basicHelpInfoData.Help,
+      },
     });
   } catch (e: any) {
     console.error(e);

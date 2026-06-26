@@ -17,7 +17,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p public
-RUN pnpm dlx playwright install --with-deps chrome
+RUN pnpm exec playwright install --with-deps chrome
 RUN pnpm run build
 
 # prod

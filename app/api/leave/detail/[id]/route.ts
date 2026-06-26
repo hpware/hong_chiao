@@ -35,18 +35,18 @@ export const GET = async (request: NextRequest) => {
     //get vars
     const params = request.nextUrl.searchParams;
     const semiYear = params.get("year");
-    const semistry = params.get("sem");
+    const semistry = params.get("semi");
     if (!(semiYear && semistry)) {
       statusCode = 400;
-      throw new Error("阿你忘了填 ?year 或(和) ?sem");
+      throw new Error("阿你忘了填 ?year 或(和) ?semi");
     }
     if (Number(semiYear) < 1) {
       statusCode = 400;
       throw new Error(`有民國${semiYear}嗎`);
     }
-    if (!(semistry !== "0" && semistry !== "1")) {
+    if (semistry !== "1" && semistry !== "2") {
       statusCode = 400;
-      throw new Error(`?sem 只支援 0 或 1`);
+      throw new Error(`?semi 只支援 1 或 2`);
     }
     const buildURLParams = new URLSearchParams();
     buildURLParams.append("SemiYear", semiYear);
@@ -145,9 +145,9 @@ export const POST = async (
       statusCode = 400;
       throw new Error(`有民國${semiYear}嗎`);
     }
-    if (!(semistry !== "0" && semistry !== "1")) {
+    if (semistry !== "1" && semistry !== "2") {
       statusCode = 400;
-      throw new Error(`sem 只支援 0 或 1`);
+      throw new Error(`sem 只支援 1 或 2`);
     }
 
     statusCode = 500;

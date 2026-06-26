@@ -32,7 +32,7 @@ export default function Page() {
     queryKey: ["leaveData"],
     queryFn: async () => {
       const response = await fetch(
-        `/api/leave?year=${requestType.year}&sem=${requestType.sem}`,
+        `/api/leave?year=${requestType.year}&semi=${requestType.sem}`,
       );
       if (!response.ok) {
         const errorData = await response.json();

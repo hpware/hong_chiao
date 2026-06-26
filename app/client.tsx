@@ -3,7 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
-import { ArrowRightToLine, HandCoins, RotateCcwKeyIcon } from "lucide-react";
+import {
+  ArrowRightToLine,
+  DiamondPercentIcon,
+  HandCoins,
+  RotateCcwKeyIcon,
+} from "lucide-react";
 
 type LeaveResponse = {
   success: boolean;

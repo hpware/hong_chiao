@@ -42,7 +42,7 @@ export default function Client({ id }: { id: string }) {
     queryKey: ["leaveData"],
     queryFn: async () => {
       const response = await fetch(
-        `/api/leave?year=${requestType.year}&sem=${requestType.sem}${requestType.editing ? "&editing=true" : ""}${requestType.reviewing ? "&reviewing=true" : ""}${requestType.passed ? "&passed=true" : ""}${requestType.rejected ? "&rejected=true" : ""}`,
+        `/api/leave?year=${requestType.year}&semi=${requestType.sem}${requestType.editing ? "&editing=true" : ""}${requestType.reviewing ? "&reviewing=true" : ""}${requestType.passed ? "&passed=true" : ""}${requestType.rejected ? "&rejected=true" : ""}`,
       );
       if (!response.ok) {
         const errorData = await response.json();

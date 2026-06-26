@@ -6,7 +6,7 @@ import LayoutClient from "./layoutClient";
 import { cn } from "@/lib/utils";
 import MainSidebar from "@/components/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
-import Script from "next/script";
+import HeadClient from "./headClient";
 
 const themeInitScript = `
 (() => {
@@ -56,15 +56,7 @@ export default function RootLayout({
         geistHeading.variable,
       )}
     >
-      <head>
-        {process.env.NODE_ENV === "development" ? (
-          <Script
-            src="//unpkg.com/react-scan/dist/auto.global.js"
-            crossOrigin="anonymous"
-            strategy="beforeInteractive"
-          />
-        ) : null}
-      </head>
+      <HeadClient />
       <body className="min-h-full flex flex-col">
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
