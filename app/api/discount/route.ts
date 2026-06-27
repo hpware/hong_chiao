@@ -68,11 +68,46 @@ export const GET = async (request: NextRequest) => {
       throw new Error(data.MSG || "Session 過期了或無效。請重新登入。");
     }
 
+    const r = data.rmodel;
+
+    const mapFamily = (f: any) => ({
+      relation: f?.Relation ?? "",
+      alive: f?.Alive ?? "",
+      name: f?.Name ?? "",
+      idNo: f?.IdNo ?? "",
+      job: f?.Job ?? "",
+      militaryRank: f?.MilitaryRank ?? "",
+    });
+
     return Response.json({
       success: data.OK,
       errMsg: data.MSG,
       data: {
         note: basicHelpInfoData.Help,
+        objId: r.objid,
+        applyId: r.ApplyID,
+        status: r.Status,
+        semiYear: r.SemiYear,
+        semester: r.Semistry,
+        stage: r.Stage,
+        studentId: r.StuId,
+        studentName: r.StuName,
+        orgName: r.OrgName,
+        dayNight: r.DayNight,
+        newsStr: r.NewsStr,
+        isApply: r.IsApply,
+        needCertified: r.NeedCertified,
+        phoneNumber: r.PhoneNumber,
+        mobileNumber: r.MobileNumber,
+        email: r.Email,
+        identity: r.Iden,
+        originalClan: r.OrigClan,
+        isBoarder: r.IsBoarders,
+        idNo: r.idno,
+        father: mapFamily(r.ReduceFamilyF),
+        mother: mapFamily(r.ReduceFamilyM),
+        guardian: mapFamily(r.ReduceFamilyG),
+        spouse: mapFamily(r.ReduceFamilyS),
       },
     });
   } catch (e: any) {

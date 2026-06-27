@@ -141,7 +141,7 @@ export const POST = async (request: NextRequest) => {
       statusCode = 400;
       throw new Error(`有民國${semiYear}嗎`);
     }
-    if (semistry !== "1" && semistry !== "2") {
+    if (!(semistry !== "1" && semistry !== "2")) {
       statusCode = 400;
       throw new Error(`sem 只支援 1 或 2`);
     }

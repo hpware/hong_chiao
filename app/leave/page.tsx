@@ -123,7 +123,7 @@ export default function Page() {
 
                 return (
                   <div className="flex justify-end space-x-1">
-                    <Link href={`/leave/req uest/${row.original.Objid}`}>
+                    <Link href={`/leave/request/${row.original.Objid}`}>
                       <Button type="button">
                         <InfoIcon />
                       </Button>
