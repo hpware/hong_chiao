@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Table from "@/components/table";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { InfoIcon, Pen, PencilIcon, Trash2Icon } from "lucide-react";
+import { InfoIcon, Pen, PencilIcon, SendIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
@@ -71,16 +71,26 @@ export default function Page() {
               header: "",
               id: "Objid",
               cell: ({ row }) => {
-                const [confirming, setConfirming] = useState(false);
+                const [confirming, setConfirming] = useState({
+                  delete: false,
+                  submit: false,
+                });
                 const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
                   null,
                 );
 
                 const handleClick = () => {
-                  if (!confirming) {
-                    setConfirming(true);
+                  if (!confirming.delete) {
+                    setConfirming((prev) => ({
+                      ...prev,
+                      delete: true,
+                    }));
                     timeoutRef.current = setTimeout(
-                      () => setConfirming(false),
+                      () =>
+                        setConfirming((prev) => ({
+                          ...prev,
+                          delete: false,
+                        })),
                       3000,
                     );
                     return;
@@ -90,7 +100,10 @@ export default function Page() {
                     clearTimeout(timeoutRef.current);
                     timeoutRef.current = null;
                   }
-                  setConfirming(false);
+                  setConfirming((prev) => ({
+                    ...prev,
+                    delete: false,
+                  }));
 
                   toast.promise(
                     async () => {
@@ -133,12 +146,15 @@ export default function Page() {
                         <PencilIcon />
                       </Button>
                     </Link>
+                    <Button type="button" onClick={(e) => {}}>
+                      {confirming.submit ? "確定傳送?" : <SendIcon />}
+                    </Button>
                     <Button
                       type="button"
                       variant="destructive"
                       onClick={handleClick}
                     >
-                      {confirming ? "確定?" : <Trash2Icon />}
+                      {confirming.delete ? "確定?" : <Trash2Icon />}
                     </Button>
                   </div>
                 );

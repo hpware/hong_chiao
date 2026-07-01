@@ -191,7 +191,7 @@ export default function Page() {
     },
     {
       name: "livingOutside",
-      displayName: "是否校外租屋",
+      displayName: "校外租屋?",
       type: "checkbox",
       required: false,
     },
@@ -228,7 +228,11 @@ export default function Page() {
           <span className="text-lg">表單</span>
           {formInputItems.map((item) => (
             <div
-              className={`${item.type === "checkbox" ? "flex flex-row items-center space-x-2" : null}`}
+              className={
+                item.type === "checkbox"
+                  ? "flex flex-row items-center gap-2"
+                  : ""
+              }
             >
               <label htmlFor={item.name} className="text-sm">
                 {item.displayName}
@@ -248,7 +252,12 @@ export default function Page() {
                   ))}
                 </NativeSelect>
               ) : item.type === "checkbox" ? (
-                <input type="checkbox" id={item.name} name={item.name} />
+                <input
+                  type="checkbox"
+                  id={item.name}
+                  name={item.name}
+                  className="h-5 w-5 shrink-0 cursor-pointer rounded border border-input bg-background accent-primary"
+                />
               ) : (
                 <Input
                   type={item.type}
