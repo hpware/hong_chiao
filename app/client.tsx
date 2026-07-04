@@ -9,6 +9,7 @@ import {
   HandCoins,
   RotateCcwKeyIcon,
 } from "lucide-react";
+import Table from "@/components/table";
 
 type LeaveResponse = {
   success: boolean;
@@ -20,6 +21,17 @@ type LeaveResponse = {
     }[];
     absent: {}[];
   };
+};
+
+type Announcement = {
+  unit: string;
+  date: string;
+  content: string;
+};
+
+type AnnouncementsResponse = {
+  success: boolean;
+  data: Announcement[];
 };
 
 const randomTitleText = ["您好！", "歡迎回來！"];
@@ -41,22 +53,6 @@ export default function Client() {
       return response.json();
     },
   });
-  const { data: userId } = useQuery({
-    queryKey: ["userId"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/userInfo/name");
-        if (!response.ok) {
-          throw new Error("Failed to fetch user ID");
-        }
-        const data = await response.json();
-        localStorage.setItem("user", data.name);
-        return data.name;
-      } catch (error) {
-        console.error("Error fetching user ID:", error);
-      }
-    },
-  });
 
   const cards = useMemo(() => {
     const leaveCards =
@@ -75,6 +71,40 @@ export default function Client() {
       },
     ];
   }, [queryData]);
+
+  const { data: announcements } = useQuery<AnnouncementsResponse>({
+    queryKey: ["announcements"],
+    queryFn: async () => {
+      const res = await fetch("/api/home/announcements");
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to fetch announcements.");
+      }
+      return res.json();
+    },
+  });
+
+  const annoucementsData = useMemo(
+    () => announcements?.data.map((item) => ({ ...item })) ?? [],
+    [announcements],
+  );
+
+  const { data: userId } = useQuery({
+    queryKey: ["userId"],
+    queryFn: async () => {
+      try {
+        const response = await fetch("/api/userInfo/name");
+        if (!response.ok) {
+          throw new Error("Failed to fetch user ID");
+        }
+        const data = await response.json();
+        localStorage.setItem("user", data.name);
+        return data.name;
+      } catch (error) {
+        console.error("Error fetching user ID:", error);
+      }
+    },
+  });
 
   const titleText = useMemo(
     () => randomTitleText[Math.floor(Math.random() * randomTitleText.length)],
@@ -133,13 +163,11 @@ export default function Client() {
       </div>
       <div className="grid gap-3 px-7 sm:grid-cols-2 lg:grid-cols-3 pt-5 mt-0">
         {cards.map((card) => {
-          if (
-            !(
-              card.label === "缺曠紀錄" ||
-              card.label === "曠課" ||
-              card.label === "操行分數"
-            )
-          )
+          if (!(
+            card.label === "缺曠紀錄" ||
+            card.label === "曠課" ||
+            card.label === "操行分數"
+          ))
             return null;
           return (
             <div
@@ -154,6 +182,7 @@ export default function Client() {
           );
         })}
       </div>
+      <Table columns={[]} data={annoucementsData || []} />
       <div className="rounded-lg border border-border bg-background p-4 shadow-sm"></div>
     </div>
   );
