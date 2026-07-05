@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import type { BrowserContext } from "playwright";
 
 export const authCookieNames = [
   "ASP.NET_SessionId",
@@ -81,3 +82,5 @@ export function getHiddenInputValue(html: string, inputName: string) {
 
   return valueMatch?.[1] ?? "";
 }
+
+export type BrowserCookieType = Parameters<BrowserContext["addCookies"]>[0];

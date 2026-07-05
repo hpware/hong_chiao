@@ -116,7 +116,7 @@ export default function Client() {
                     }),
                   });
                   const res = await req.json();
-                  if (!res.success) {
+                  if (!res.success || !req.ok) {
                     // clear captcha
                     const captchaInput = form.querySelector(
                       'input[name="captcha"]',

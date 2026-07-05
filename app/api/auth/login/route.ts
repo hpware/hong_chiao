@@ -1,12 +1,6 @@
-import { chromium } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getRequestCookies,
-  getHiddenInputValue,
-} from "@/components/univeralComponents";
-
+import { getRequestCookies } from "@/components/univeralComponents";
+import LoginFunction from "@/components/px_items/user/login";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -16,108 +10,57 @@ type LoginRequestBody = {
   captcha: string;
 };
 
-type CaptchaResponse = Array<unknown> & {
-  1?: {
-    ValidateCode?: string;
-  };
-};
-
 export const POST = async (request: NextRequest) => {
   let statusCode = 500;
-  const body = (await request.json()) as LoginRequestBody;
-
-  if (!body.username || !body.password || !body.captcha) {
-    return NextResponse.json(
-      { error: '缺少 "username", "password" 或 "captcha" 的數值' },
-      { status: 400 },
-    );
-  }
-
-  const rawUrl = process.env.API_URL;
-
-  if (!rawUrl) {
-    return NextResponse.json(
-      {
-        error: "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
-      },
-      { status: 500 },
-    );
-  }
-  // calc time
-  const startTime = Date.now();
-  const apiUrl = rawUrl;
-  const origin = new URL(apiUrl).origin;
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ userAgent: USER_AGENT });
-
   try {
-    // Only restore the session cookie so the captcha (ValidateCode) generated
-    // during getCaptcha is found in the same session. Do NOT restore the stale
-    // __RequestVerificationToken cookie: this route's own GET below establishes
-    // a fresh anti-forgery pair, and re-injecting the old token at path "/"
-    // produces a duplicate cookie that breaks anti-forgery validation.
-    const requestCookies = getRequestCookies(request, new URL(apiUrl), [
-      "ASP.NET_SessionId",
-    ]);
-    if (requestCookies.length > 0) {
-      await context.addCookies(requestCookies);
+    const body = (await request.json()) as LoginRequestBody;
+
+    if (!body.username || !body.password || !body.captcha) {
+      return NextResponse.json(
+        { error: '缺少 "username", "password" 或 "captcha" 的數值' },
+        { status: 400 },
+      );
     }
-
-    const loginPage = await context.request.get(
-      endpoint(apiUrl, "/B2KPortal/Login.aspx"),
-    );
-    const loginPageHTML = await loginPage.text();
-    const getHiddenRequestVerificationToken = getHiddenInputValue(
-      loginPageHTML,
-      "__RequestVerificationToken",
-    );
-
-    const form = new URLSearchParams();
-    form.append(
-      "__RequestVerificationToken",
-      getHiddenRequestVerificationToken,
-    );
-    form.append("LoginMode", "");
-    form.append("LoginID", body.username);
-    form.append("Password", body.password);
-    form.append("ValidateCode", body.captcha);
-    form.append("ClearLock", "0");
-
-    const loginResponse = await context.request.post(
-      endpoint(apiUrl, "/B2KPortal/Login.aspx"),
-      {
-        data: form.toString(),
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+    if (!process.env.API_URL) {
+      return NextResponse.json(
+        {
+          error:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
         },
-      },
+        { status: 500 },
+      );
+    }
+    const browserCookies = getRequestCookies(
+      request,
+      new URL(process.env.API_URL),
+      ["ASP.NET_SessionId"],
     );
-    const html = await loginResponse.text();
-    const hdfText = getHiddenInputValue(html, "hdfMessage");
 
-    const loginResult = {
-      status: loginResponse.status(),
-      statusText: loginResponse.statusText(),
-      url: loginResponse.url(),
-      hdfText,
-      html,
-      changePasswordNotice: loginResponse
-        .url()
-        .endsWith("/Account/ChangePassword"),
-    };
-
-    const sessionCookies = await context.cookies(origin);
-    const duration = Date.now() - startTime;
+    const startTime = Date.now();
+    const exec = await LoginFunction(
+      body.username,
+      body.password,
+      body.captcha,
+      browserCookies,
+    );
+    if (exec.error != null) {
+      statusCode = 500;
+      throw new Error(exec.error);
+    }
+    if (!exec.success) {
+      statusCode = 400;
+      throw new Error(exec.hdfText);
+    }
     const nextResponse = NextResponse.json({
-      success: loginResult.url !== endpoint(apiUrl, "/B2KPortal/Login.aspx"),
-      remoteStatus: loginResult.status,
-      statusText: loginResult.statusText,
-      url: loginResult.url,
-      hdfText: loginResult.hdfText,
-      duration,
-      changePasswordNotice: loginResult.changePasswordNotice,
+      success: exec.success,
+      remoteStatus: exec.remoteStatus,
+      statusText: exec.statusText,
+      url: exec.url,
+      hdfText: exec.hdfText,
+      changePasswordNotice: exec.changePasswordNotice,
+      duration: (Date.now() - startTime) / 1000,
     });
-    for (const cookie of sessionCookies) {
+    for (const cookie of exec.setCookies) {
       nextResponse.cookies.set(cookie.name, cookie.value, {
         httpOnly: cookie.httpOnly,
         secure: request.nextUrl.protocol === "https:",
@@ -134,10 +77,21 @@ export const POST = async (request: NextRequest) => {
             : undefined,
       });
     }
-
     return nextResponse;
-  } finally {
-    await context.close();
-    await browser.close();
+  } catch (e: any) {
+    return Response.json(
+      {
+        success: false,
+        remoteStatus: "",
+        statusText: "",
+        url: "",
+        hdfText: e.message,
+        changePasswordNotice: "",
+        duration: "",
+      },
+      {
+        status: statusCode,
+      },
+    );
   }
 };

@@ -1,109 +1,40 @@
-// this API path is just here for now, in the near future this will be used to get the captcha image for the login page.
-import { chromium } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import { USER_AGENT, endpoint } from "@/components/univeralComponents";
-import OpenAI from "openai";
+import { getRequestCookies } from "@/components/univeralComponents";
+import GetCaptchaImage from "@/components/px_items/user/captcha";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type LoginRequestBody = {
-  username: string;
-  password: string;
-};
-
-type CaptchaResponse = Array<unknown> & {
-  1?: {
-    ValidateCode?: string;
-    ImgSrc?: string;
-  };
-};
-
-function getHiddenInputValue(html: string, inputId: string) {
-  const inputPattern = new RegExp(
-    `<input\\b(?=[^>]*\\bid=["']${inputId}["'])[^>]*>`,
-    "i",
-  );
-  const inputMatch = html.match(inputPattern);
-  const valueMatch = inputMatch?.[0].match(/\bvalue=["']([^"']*)["']/i);
-
-  return valueMatch?.[1] ?? "";
-}
-
 export const GET = async (request: NextRequest) => {
-  const rawUrl = process.env.API_URL;
-
-  if (!rawUrl) {
-    return NextResponse.json(
-      {
-        error: "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
-      },
-      { status: 500 },
-    );
-  }
-  // calc time
-  const startTime = Date.now();
-  const apiUrl = rawUrl;
-  const origin = new URL(apiUrl).origin;
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ userAgent: USER_AGENT });
-
   try {
-    const existingSessionId = request.cookies.get("ASP.NET_SessionId")?.value;
+    const rawUrl = process.env.API_URL;
 
-    if (existingSessionId) {
-      const url = new URL(apiUrl);
-      await context.addCookies([
-        {
-          name: "ASP.NET_SessionId",
-          value: existingSessionId,
-          domain: url.hostname,
-          path: "/",
-          httpOnly: true,
-          secure: url.protocol === "https:",
-          sameSite: "Lax",
-        },
-      ]);
-    }
-
-    await context.request.get(endpoint(apiUrl, "/B2KPortal/Login.aspx"));
-
-    const captchaResponse = await context.request.get(
-      endpoint(apiUrl, "/B2KPortal/Account/CreateValidateCode"),
-      {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-        },
-      },
-    );
-    const captchaText = await captchaResponse.text();
-    let captchaJson: CaptchaResponse;
-
-    try {
-      captchaJson = JSON.parse(captchaText) as CaptchaResponse;
-    } catch {
+    if (!rawUrl) {
       return NextResponse.json(
         {
-          error: "Captcha endpoint did not return JSON",
-          remoteStatus: captchaResponse.status(),
-          url: captchaResponse.url(),
-          bodyPreview: captchaText.slice(0, 200),
+          error:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
         },
-        { status: 502 },
+        { status: 500 },
       );
     }
 
-    const duration = Date.now() - startTime;
+    const existingSessionCookie = getRequestCookies(request, new URL(rawUrl), [
+      "ASP.NET_SessionId",
+    ]);
+
+    const startTime = Date.now();
+    const getCaptchaImage = await GetCaptchaImage(existingSessionCookie);
     const nextResponse = NextResponse.json(
       {
-        image: captchaJson[1]?.ImgSrc || null,
-        duration,
+        success: getCaptchaImage.success,
+        image: getCaptchaImage.image,
+        duration: (Date.now() - startTime) / 1000,
       },
       { status: 200 },
     );
 
-    const browserCookies = await context.cookies();
-    for (const cookie of browserCookies) {
+    for (const cookie of getCaptchaImage.setCookies) {
       nextResponse.cookies.set(cookie.name, cookie.value, {
         httpOnly: cookie.httpOnly,
         secure: request.nextUrl.protocol === "https:",
@@ -122,8 +53,10 @@ export const GET = async (request: NextRequest) => {
     }
 
     return nextResponse;
-  } finally {
-    await context.close();
-    await browser.close();
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to get captcha image" },
+      { status: 500 },
+    );
   }
 };
