@@ -1,17 +1,11 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import GetLeaveBasicInfo from "@/components/px_items/leave/getBasicInfo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -39,27 +33,12 @@ export const GET = async (request: NextRequest) => {
       statusCode = 400;
       throw new Error("需要 year, semi 的變數。");
     }
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("SemiYear", year);
-    buildURLParams.append("Semistry", semistry);
-    buildURLParams.append("ObjId", "0");
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/YSD21Detail_PageLoad"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
+    const apiResponse = await GetLeaveBasicInfo(
+      browserCookies,
+      year,
+      semistry,
     );
-    const responseText = await response.text();
-    const apiResponse = JSON.parse(responseText);
 
     if (!apiResponse.IsOK) {
       statusCode = 401;
@@ -95,8 +74,5 @@ export const GET = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

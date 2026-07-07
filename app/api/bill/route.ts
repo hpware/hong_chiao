@@ -1,17 +1,11 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import GetBill from "@/components/px_items/bill";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -39,38 +33,8 @@ export const GET = async (request: NextRequest) => {
     //idk yet
     const step = params.get("step");
     if (!year || !semi || !kind || !step) throw new Error("a");
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("SemiYear", year);
-    buildURLParams.append("Semistry", semi);
-    buildURLParams.append("KindType", kind);
-    buildURLParams.append("Steps", step);
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(endpoint(apiUrl, "/"), {
-      data: buildURLParams.toString(),
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-    });
-    const responseText = await response.text();
-    const apiResponse = JSON.parse(responseText);
-
-    const data = apiResponse.OnNoLogin
-      ? {
-          failedLogin: true,
-          res: apiResponse,
-        }
-      : {
-          failedLogin: false,
-          status: response.status(),
-          // passed results
-          success: apiResponse.IsOK,
-          data: apiResponse.LeaveS,
-        };
+    const data = await GetBill(browserCookies, year, semi, kind, step);
 
     if (data.failedLogin) {
       statusCode = 401;
@@ -87,8 +51,5 @@ export const GET = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

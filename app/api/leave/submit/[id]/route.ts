@@ -1,12 +1,8 @@
 //YSD21/YSD21/YSD21_SendLeave
 
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import SubmitLeave from "@/components/px_items/leave/submit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,8 +12,6 @@ export const POST = async (
   websiteContext: { params: Promise<{ id: string }> },
 ) => {
   const { id } = await websiteContext.params;
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -39,24 +33,8 @@ export const POST = async (
     statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
 
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("Objid", id);
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/YSD21_SendLeave"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseText = await response.text();
-    const createResponse = JSON.parse(responseText);
+    const createResponse = await SubmitLeave(browserCookies, id);
 
     if (createResponse.IsOK !== true) {
       statusCode = 401;
@@ -77,8 +55,5 @@ export const POST = async (
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

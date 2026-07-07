@@ -1,17 +1,11 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import GetHomeData from "@/components/px_items/home/data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -34,7 +28,6 @@ export const GET = async (request: NextRequest) => {
     statusCode = 500;
     //get vars
     const params = request.nextUrl.searchParams;
-    const key = params.get("key");
     const year = params.get("year");
     const semistry = params.get("semistry");
     if (!year || !semistry || isNaN(Number(year)) || isNaN(Number(semistry))) {
@@ -43,27 +36,8 @@ export const GET = async (request: NextRequest) => {
         "缺少必要的查詢參數，或參數格式不正確。請提供有效的 year 和 semistry 參數。",
       );
     }
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("__RequestVerificationToken", ""); // just in case if this gets changed.
-    buildURLParams.append("ppqmodel[SemiYear]", year);
-    buildURLParams.append("ppqmodel[Semistry]", semistry);
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YStuQuery/YStuQuery/YSDStuMain_Qry"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseText = await response.text();
-    const data = JSON.parse(responseText);
+    const data = await GetHomeData(browserCookies, year, semistry);
 
     if (!data.OK) {
       statusCode = 401;
@@ -116,8 +90,5 @@ export const GET = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

@@ -1,10 +1,6 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import GetLeaveClassDetails from "@/components/px_items/leave/getClassDetails";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -180,8 +176,6 @@ function cleanItems(
 }
 
 export const GET = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -227,28 +221,14 @@ export const GET = async (request: NextRequest) => {
       statusCode = 400;
       throw new Error("Date parsing error, please try again.");
     }
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("DateStart", parsedStartDate);
-    buildURLParams.append("DateStop", parsedEndDate);
-    buildURLParams.append("SemiYear", year);
-    buildURLParams.append("Semistry", semistry);
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/YSD21_GetDatePaiKeS"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
+    const apiResponse = await GetLeaveClassDetails(
+      browserCookies,
+      parsedStartDate,
+      parsedEndDate,
+      year,
+      semistry,
     );
-    const responseText = await response.text();
-    const apiResponse = JSON.parse(responseText);
 
     if (!apiResponse.IsOK) {
       statusCode = 401;
@@ -270,8 +250,5 @@ export const GET = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

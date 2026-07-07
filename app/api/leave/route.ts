@@ -1,17 +1,11 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import { CreateLeave, DeleteLeave, GetLeaves } from "@/components/px_items/leave";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -48,43 +42,7 @@ export const GET = async (request: NextRequest) => {
       statusCode = 400;
       throw new Error(`?semi 只支援 1 或 2`);
     }
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("SemiYear", semiYear);
-    buildURLParams.append("Semistry", semistry);
-    buildURLParams.append("ApplyDateS", "");
-    buildURLParams.append("ApplyDateE", "");
-    buildURLParams.append("ClassDateS", "");
-    buildURLParams.append("ClassDateE", "");
-
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/YSD21_GetLeaveS"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseText = await response.text();
-    const leaveResponse = JSON.parse(responseText);
-
-    const data = leaveResponse.OnNoLogin
-      ? {
-          failedLogin: true,
-          res: leaveResponse,
-        }
-      : {
-          failedLogin: false,
-          status: response.status(),
-          // passed results
-          success: leaveResponse.IsOK,
-          data: leaveResponse.LeaveS,
-        };
+    const data = await GetLeaves(browserCookies, semiYear, semistry);
 
     if (data.failedLogin) {
       statusCode = 401;
@@ -101,16 +59,11 @@ export const GET = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };
 
 // 創立
 export const POST = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -147,28 +100,8 @@ export const POST = async (request: NextRequest) => {
     }
 
     statusCode = 500;
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-    const buildURLParamsLoadCheckLeaveCode = new URLSearchParams();
-    buildURLParamsLoadCheckLeaveCode.append("SemiYear", semiYear);
-    buildURLParamsLoadCheckLeaveCode.append("Semistry", semistry);
-    buildURLParamsLoadCheckLeaveCode.append("ObjId", "0");
-    const resPageLoadCheckLeaveCode = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/YSD21Detail_PageLoad"),
-      {
-        data: buildURLParamsLoadCheckLeaveCode.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseTextLoadCheckLeaveCode =
-      await resPageLoadCheckLeaveCode.text();
-    const apiResponseLoadCheckLeaveCode = JSON.parse(
-      responseTextLoadCheckLeaveCode,
-    );
+    const { pageLoad: apiResponseLoadCheckLeaveCode, createResponse } =
+      await CreateLeave(browserCookies, body);
     if (!apiResponseLoadCheckLeaveCode.IsOK) {
       statusCode = 400;
       throw new Error("無法載入請假資料");
@@ -194,32 +127,6 @@ export const POST = async (request: NextRequest) => {
       statusCode = 400;
       throw new Error("你選的假別不存在");
     }
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("model[LeaveId]", "");
-    buildURLParams.append("model[SemiYear]", semiYear);
-    buildURLParams.append("model[Semistry]", semistry);
-    buildURLParams.append("model[DateStart]", body.startDate);
-    buildURLParams.append("model[DateStop]", body.endDate);
-    buildURLParams.append("model[LeaveCode]", body.typeOfLeave);
-    buildURLParams.append("model[Cause]", body.reason);
-
-    body.periods.forEach((period: string) => {
-      buildURLParams.append("model[DatePaiKeS][]", `${period}`);
-      console.log(period);
-    });
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/YSD21Detail_SaveLeave"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseText = await response.text();
-    const createResponse = JSON.parse(responseText);
 
     if (createResponse.IsOK !== true) {
       statusCode = 401;
@@ -240,15 +147,10 @@ export const POST = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };
 
 export const DELETE = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -279,25 +181,7 @@ export const DELETE = async (request: NextRequest) => {
     }
     statusCode = 500;
 
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("Objid", body.id);
-
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/YSD21_DelLeaveApply"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseText = await response.text();
-    const deleteResponse = JSON.parse(responseText);
+    const deleteResponse = await DeleteLeave(browserCookies, body.id);
 
     if (deleteResponse.IsOK !== true) {
       statusCode = 401;
@@ -316,8 +200,5 @@ export const DELETE = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

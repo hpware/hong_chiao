@@ -1,17 +1,11 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import GetDiscount from "@/components/px_items/discount";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -32,36 +26,7 @@ export const GET = async (request: NextRequest) => {
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("Qmodel", "");
-    await context.addCookies(browserCookies);
-
-    const basicHelpInfo = await context.request.post(
-      endpoint(apiUrl, "/YSJStu/YSJSTU/YSJSTU_QryNotify"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const basicHelpInfoText = await basicHelpInfo.text();
-    const basicHelpInfoData = JSON.parse(basicHelpInfoText);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSJStu/YSJSTU/YSJStu_PageLoad"),
-      {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseText = await response.text();
-    const data = JSON.parse(responseText);
+    const { basicHelpInfoData, data } = await GetDiscount(browserCookies);
 
     if (!(basicHelpInfoData.IsOK && data.IsOK)) {
       statusCode = 401;
@@ -120,8 +85,5 @@ export const GET = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };
