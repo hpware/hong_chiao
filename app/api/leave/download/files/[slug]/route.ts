@@ -1,10 +1,6 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import DownloadLeaveFile from "@/components/px_items/leave/downloadFile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,8 +10,6 @@ export const GET = async (
   websiteContext: { params: Promise<{ slug: string }> },
 ) => {
   const { slug } = await websiteContext.params;
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -43,35 +37,12 @@ export const GET = async (
       throw new Error("需要 file, key 的變數。");
     }
 
-    const buildFormData = new FormData();
-    buildFormData.append("__RequestVerificationToken", requestKey);
-    buildFormData.append("ShowFileName", slug);
-    buildFormData.append("FileId", slug);
-    buildFormData.append("PathTag", "SDLeave");
+    const download = await DownloadLeaveFile(browserCookies, slug, requestKey);
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/DownLoad"),
-      {
-        data: buildFormData.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseBlob = await response.body();
-    const contentDisposition = response.headers()["content-disposition"] || "";
-    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-    const filename = filenameMatch ? filenameMatch[1] : "downloaded_file";
-
-    return new Response(new Uint8Array(responseBlob), {
+    return new Response(new Uint8Array(download.body), {
       headers: {
         "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `attachment; filename="${download.filename}"`,
       },
     });
   } catch (e: any) {
@@ -84,8 +55,5 @@ export const GET = async (
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

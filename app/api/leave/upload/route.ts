@@ -1,18 +1,12 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import UploadLeaveFile from "@/components/px_items/leave/upload";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const POST = async (request: NextRequest) => {
   const body = await request.json();
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -32,25 +26,8 @@ export const POST = async (request: NextRequest) => {
     statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
-    const buildFormData = new FormData();
-    buildFormData.append("example", "example");
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/YSD21_UploadImageFile  "),
-      {
-        data: buildFormData,
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseText = await response.text();
-    const data = JSON.parse(responseText);
+    const data = await UploadLeaveFile(browserCookies);
 
     if (data.failedLogin) {
       statusCode = 401;
@@ -67,8 +44,5 @@ export const POST = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

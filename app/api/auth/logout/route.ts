@@ -1,10 +1,8 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
 import {
   authCookieNames,
-  USER_AGENT,
-  endpoint,
 } from "@/components/univeralComponents";
+import LogoutRemote from "@/components/px_items/auth/logout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,8 +25,6 @@ function redirectToLogin(request: NextRequest, isExpired = false) {
 }
 
 export const GET = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   const params = request.nextUrl.searchParams;
   const isExpired = params.get("expired") === "true";
 
@@ -62,37 +58,10 @@ export const GET = async (request: NextRequest) => {
       };
     });
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    await context.request.post(
-      endpoint(apiUrl, "/B2KPortal/B2KPortal/ReUrlContent"),
-      {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-        },
-      },
-    );
-
-    const logoutResult = await context.request.post(
-      endpoint(apiUrl, "/B2KPortal/B2KPortal/Logout"),
-      {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-        },
-      },
-    );
-
-    if (!logoutResult.ok()) {
-      throw new Error(`登出失敗，原因： ${logoutResult.status()}`);
-    }
+    await LogoutRemote(browserCookies);
     return redirectToLogin(request, isExpired);
   } catch (error: unknown) {
     console.error(error);
     return redirectToLogin(request, isExpired);
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

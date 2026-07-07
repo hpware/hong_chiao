@@ -1,17 +1,11 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import SubmitCertificate from "@/components/px_items/certificate/submit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const POST = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -32,21 +26,7 @@ export const POST = async (request: NextRequest) => {
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YEK_S/YEK/YEKStu_Sent"),
-      {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseText = await response.text();
-    const data = JSON.parse(responseText);
+    const data = await SubmitCertificate(browserCookies);
     if (data.OK) {
       statusCode = 401;
       throw new Error("Session 過期了或無效。請重新登入。");
@@ -66,8 +46,5 @@ export const POST = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

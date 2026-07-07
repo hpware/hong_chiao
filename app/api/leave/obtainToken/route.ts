@@ -1,18 +1,11 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-  getHiddenInputValue,
-} from "@/components/univeralComponents";
+import { getBrowserCookies } from "@/components/univeralComponents";
+import ObtainLeaveToken from "@/components/px_items/leave/obtainToken";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -33,31 +26,9 @@ export const GET = async (request: NextRequest) => {
     statusCode = 401;
     const browserCookies = await getBrowserCookies(request, statusCode, url);
     statusCode = 500;
-    const params = request.nextUrl.searchParams;
-    const year = params.get("year");
-    const semi = params.get("semi");
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("example", "example");
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSD21/YSD21/YSD21Detail"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
-    );
-    const responseText = await response.text();
-    const getHiddenRequestVerificationToken = getHiddenInputValue(
-      responseText,
-      "__RequestVerificationToken",
-    );
+    const getHiddenRequestVerificationToken =
+      await ObtainLeaveToken(browserCookies);
     return Response.json({
       success: true,
       token: getHiddenRequestVerificationToken,
@@ -73,8 +44,5 @@ export const GET = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };
