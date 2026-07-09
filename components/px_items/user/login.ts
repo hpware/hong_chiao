@@ -76,7 +76,7 @@ export default async function LoginFunction(
         .url()
         .endsWith("/Account/ChangePassword"),
       setCookies: sessionCookies,
-      error: null,
+      error: hdfText,
     };
   } catch (e: any) {
     return {

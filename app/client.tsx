@@ -182,8 +182,8 @@ export default function Client() {
           );
         })}
       </div>
-      <Table columns={[]} data={annoucementsData || []} />
-      <div className="rounded-lg border border-border bg-background p-4 shadow-sm"></div>
+      <Table columns={[]} data={annoucementsData || []} className="mt-5 mx-7" />
+      {/*<div className="rounded-lg border border-border bg-background p-4 shadow-sm"></div> */}
     </div>
   );
 }

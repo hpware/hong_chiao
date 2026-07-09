@@ -32,8 +32,10 @@ import {
   User2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
+import { toast } from "sonner";
 
 const navItems = [
   {
@@ -126,36 +128,19 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
     [],
   );
 
-  const renewSession = useCallback(async () => {
-    const response = await fetch("/api/auth/renewTimeoutTimer?kick=direct");
-    const data = await response.json();
-    if (response.status === 401 || response.status === 307) {
-      // sess expired
-
+  const trpc = useTRPC();
+  const renewQuery = useQuery(
+    trpc.user.renewTimer.queryOptions(undefined, {
+      refetchInterval: 10 * 60 * 1000,
+    }),
+  );
+  // On an expired/invalid session the procedure throws UNAUTHORIZED — kick to logout.
+  useEffect(() => {
+    if (renewQuery.error?.data?.code === "UNAUTHORIZED") {
+      toast.error("Session 過期 請重新登入");
       router.push("/api/auth/logout?expired=true");
     }
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to renew session");
-    }
-
-    return data;
-  }, [router]);
-
-  const renewQuery = useQuery({
-    queryKey: ["renewSession"],
-    queryFn: renewSession,
-  });
-  // renew every ten minutes
-  useEffect(() => {
-    const interval = setInterval(
-      () => {
-        renewQuery.refetch();
-      },
-      10 * 60 * 1000,
-    );
-
-    return () => clearInterval(interval);
-  }, [renewQuery.refetch]);
+  }, [renewQuery.error, router]);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">

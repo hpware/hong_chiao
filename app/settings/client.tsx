@@ -63,8 +63,15 @@ function ResetPassword() {
               "/api/auth/changePassword",
               {
                 method: "POST",
+                body: JSON.stringify({
+                  oldPassword,
+                  newPassword,
+                }),
               },
             );
+            if (!changePasswordRequest.ok) {
+              throw new Error(await changePasswordRequest.text());
+            }
           });
         }}
       >

@@ -16,7 +16,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import LoginBG from "./login_bg.jpg";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 
 export default function Client() {
@@ -45,6 +45,7 @@ export default function Client() {
     };
   }, []);
   const { data: getCaptcha } = useQuery(trpc.user.getCaptcha.queryOptions());
+  const loginMutation = useMutation(trpc.user.login.mutationOptions());
 
   return (
     <>
@@ -98,28 +99,24 @@ export default function Client() {
                     !captcha
                   )
                     throw new Error("使用者帳戶, 密碼或驗證碼不可是空白");
-                  const req = await fetch("/api/auth/login", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      username,
-                      password,
-                      captcha,
-                    }),
-                  });
-                  const res = await req.json();
-                  if (!res.success || !req.ok) {
-                    // clear captcha
+                  let res;
+                  try {
+                    res = await loginMutation.mutateAsync({
+                      username: String(username),
+                      password: String(password),
+                      captcha: String(captcha),
+                    });
+                  } catch (err) {
+                    // The mutation throws (UNAUTHORIZED) on bad credentials —
+                    // clear and refresh the captcha, then rethrow for the toast.
                     const captchaInput = form.querySelector(
                       'input[name="captcha"]',
                     ) as HTMLInputElement | null;
                     if (captchaInput) captchaInput.value = "";
-                    queryClient.invalidateQueries({
-                      queryKey: ["captcha"],
-                    });
-                    throw new Error(`${res.hdfText}`);
+                    queryClient.invalidateQueries(
+                      trpc.user.getCaptcha.queryFilter(),
+                    );
+                    throw err;
                   }
                   const nextPath = new URLSearchParams(
                     window.location.search,
@@ -142,7 +139,7 @@ export default function Client() {
                 },
                 {
                   success: (res) =>
-                    `登入成功! 耗時${Number(res.duration / 1000).toPrecision(2)}秒${res.changePasswordNotice ? "，另外您的密碼以六個月沒更換，請盡快更換系統密碼。" : ""}`,
+                    `登入成功! 耗時${Number(res.duration).toPrecision(2)}秒${res.changePasswordNotice ? "，另外您的密碼以六個月沒更換，請盡快更換系統密碼。" : ""}`,
                   loading: "登入中...",
                   error: (e) => `錯誤: ${e.message}`,
                 },
@@ -189,17 +186,26 @@ export default function Client() {
                   <span>驗證碼:</span>
                 </label>
                 <div className="flex flex-row space-x-1 max-w-80">
-                  <Image
-                    src={getCaptcha?.image}
-                    alt="captcha"
-                    width={150}
-                    height={40}
-                    onClick={(e) => {
-                      queryClient.invalidateQueries(
-                        trpc.user.getCaptcha.queryFilter(),
-                      );
-                    }}
-                  />
+                  {getCaptcha?.image ? (
+                    <Image
+                      src={getCaptcha.image}
+                      alt="captcha"
+                      width={150}
+                      height={40}
+                      onClick={() => {
+                        queryClient.invalidateQueries(
+                          trpc.user.getCaptcha.queryFilter(),
+                        );
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="flex items-center justify-center rounded border text-sm text-muted-foreground"
+                      style={{ width: 150, height: 40 }}
+                    >
+                      載入中…
+                    </div>
+                  )}
                   <Input className="px-3 py-2" type="text" name="captcha" />
                 </div>{" "}
               </div>
