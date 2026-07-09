@@ -1,6 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import { useTRPC } from "@/trpc/client";
 import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
 import {
@@ -38,6 +39,7 @@ const randomTitleText = ["您好！", "歡迎回來！"];
 const randomDescText = [""];
 
 export default function Client() {
+  const trpc = useTRPC();
   const semester = getSemesterFromDate();
 
   const { data: queryData } = useQuery<LeaveResponse>({
@@ -89,22 +91,11 @@ export default function Client() {
     [announcements],
   );
 
-  const { data: userId } = useQuery({
-    queryKey: ["userId"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/userInfo/name");
-        if (!response.ok) {
-          throw new Error("Failed to fetch user ID");
-        }
-        const data = await response.json();
-        localStorage.setItem("user", data.name);
-        return data.name;
-      } catch (error) {
-        console.error("Error fetching user ID:", error);
-      }
-    },
-  });
+  const { data: userInfo } = useQuery(trpc.user.name.queryOptions());
+  useEffect(() => {
+    if (userInfo?.name) localStorage.setItem("user", userInfo.name);
+  }, [userInfo?.name]);
+  const userId = userInfo?.name;
 
   const titleText = useMemo(
     () => randomTitleText[Math.floor(Math.random() * randomTitleText.length)],

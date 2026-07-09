@@ -98,37 +98,32 @@ export default function MainSidebar() {
 function MainSidebarContent({ pathname }: { pathname: string }) {
   const router = useRouter();
   const { setOpenMobile } = useSidebar();
+  const trpc = useTRPC();
   const [userId, setUserId] = useState("");
+  // Only hit the server when we don't already have the name cached locally.
+  const [needsFetch, setNeedsFetch] = useState(false);
 
   useEffect(() => {
-    const checkLocalStorage = localStorage.getItem("user");
-
-    if (checkLocalStorage) {
-      setUserId(checkLocalStorage);
-    } else {
-      const fetchUserId = async () => {
-        try {
-          const response = await fetch("/api/userInfo/name");
-          if (!response.ok) {
-            throw new Error("Failed to fetch user ID");
-          }
-          const data = await response.json();
-          localStorage.setItem("user", data.name);
-          setUserId(data.name);
-        } catch (error) {
-          console.error("Error fetching user ID:", error);
-        }
-      };
-      fetchUserId();
-    }
+    const cached = localStorage.getItem("user");
+    if (cached) setUserId(cached);
+    else setNeedsFetch(true);
   }, []);
+
+  const userNameQuery = useQuery(
+    trpc.user.name.queryOptions(undefined, { enabled: needsFetch }),
+  );
+  useEffect(() => {
+    if (userNameQuery.data?.name) {
+      setUserId(userNameQuery.data.name);
+      localStorage.setItem("user", userNameQuery.data.name);
+    }
+  }, [userNameQuery.data?.name]);
 
   const schoolName = useMemo(
     () => process.env.NEXT_PUBLIC_SCHOOL_NAME || "校務系統",
     [],
   );
 
-  const trpc = useTRPC();
   const renewQuery = useQuery(
     trpc.user.renewTimer.queryOptions(undefined, {
       refetchInterval: 10 * 60 * 1000,

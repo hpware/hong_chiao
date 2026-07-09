@@ -298,12 +298,12 @@ export const appRouter = createTRPCRouter({
       const browserCookies = await getBrowserCookies(cookieStore, url);
       const startTime = Date.now();
       const getName = await GetUserName(browserCookies);
-      return Response.json({
+      return {
         success: getName.success,
         name: getName.name,
         error: null,
         duration: Date.now() - startTime,
-      });
+      };
     }),
     detailedInfo: baseProcedure.query(async () => {
       return "Currently in WIP, please do not use this endpoint, this will change soon.";
