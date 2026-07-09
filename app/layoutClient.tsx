@@ -16,7 +16,10 @@ export default function Client({
   sidebar: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const showShell = pathname !== "/auth/login";
+  const showShell =
+    pathname !== "/auth/login" &&
+    !pathname.startsWith("/_appassets/") &&
+    !pathname.startsWith("/api/");
 
   return (
     <TRPCReactProvider>

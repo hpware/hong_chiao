@@ -17,8 +17,10 @@ import Link from "next/link";
 import Image from "next/image";
 import LoginBG from "./login_bg.jpg";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
 export default function Client() {
+  const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
   const params = useSearchParams();
@@ -42,15 +44,7 @@ export default function Client() {
       root.style.colorScheme = previousColorScheme;
     };
   }, []);
-  const { data: getCaptcha } = useQuery({
-    queryKey: ["captcha"],
-    queryFn: async () => {
-      const res = await fetch("/api/auth/getCaptcha");
-      if (!res.ok) toast.error("無法取得驗證碼");
-      //toast.success("驗證碼已更新");
-      return res.json();
-    },
-  });
+  const { data: getCaptcha } = useQuery(trpc.user.getCaptcha.queryOptions());
 
   return (
     <>
@@ -201,9 +195,9 @@ export default function Client() {
                     width={150}
                     height={40}
                     onClick={(e) => {
-                      queryClient.invalidateQueries({
-                        queryKey: ["captcha"],
-                      });
+                      queryClient.invalidateQueries(
+                        trpc.user.getCaptcha.queryFilter(),
+                      );
                     }}
                   />
                   <Input className="px-3 py-2" type="text" name="captcha" />

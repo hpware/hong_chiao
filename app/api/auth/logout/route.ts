@@ -1,8 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  authCookieNames,
-} from "@/components/univeralComponents";
-import LogoutRemote from "@/components/px_items/auth/logout";
+import { authCookieNames } from "@/components/univeralComponents";
+import LogoutRemote from "@/components/px_items/user/logout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

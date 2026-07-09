@@ -16,8 +16,3 @@ export const trpc = createTRPCOptionsProxy({
   router: appRouter,
   queryClient: getQueryClient,
 });
-// If your router is on a separate server, pass a client instead:
-// createTRPCOptionsProxy({
-//   client: createTRPCClient({ links: [httpLink({ url: '...' })] }),
-//   queryClient: getQueryClient,
-// });

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getBrowserCookies } from "@/components/univeralComponents";
-import RenewTimeoutTimer from "@/components/px_items/auth/renewTimeoutTimer";
+import RenewTimeoutTimer from "@/components/px_items/user/renewTimeoutTimer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
