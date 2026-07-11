@@ -1,8 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  authCookieNames,
-} from "@/components/univeralComponents";
-import LogoutRemote from "@/components/px_items/auth/logout";
+import { authCookieNames } from "@/components/univeralComponents";
+import LogoutRemote from "@/components/px_items/user/logout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,11 +13,19 @@ function redirectToLogin(request: NextRequest, isExpired = false) {
     ),
   );
 
-  for (const cookieName of authCookieNames) {
+  for (const cookieName of [
+    "ASP.NET_SessionId",
+    "ssClientIP",
+    "ssAID",
+    "ssSchID",
+    "ssSchName",
+    "ssLoginID",
+    "ssLoginForLDAP",
+    "ssLoginName",
+  ]) {
     response.cookies.delete(cookieName);
   }
 
-  response.cookies.delete("ssLoginForLDAP");
 
   return response;
 }

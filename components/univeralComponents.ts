@@ -69,6 +69,77 @@ export function getRequestCookies(
   }));
 }
 
+// Minimal shape of a Next.js cookie store (`await cookies()`), tolerant of the
+// sync- or async-`get`/`getAll` variants across Next versions, and structurally
+// compatible with the DOM `CookieStore` global (whose `get` can return `null`).
+type CookieValue = { name: string; value: string };
+type CookieStoreLike = {
+  get(
+    name: string,
+  ):
+    | Promise<{ value?: string } | null | undefined>
+    | { value?: string }
+    | null
+    | undefined;
+  getAll():
+    | Promise<{ name: string; value?: string }[]>
+    | { name: string; value?: string }[];
+};
+
+export async function trpcGetBrowserCookies(
+  cookieStore: CookieStoreLike,
+  apiURL: URL,
+) {
+  return Promise.all(
+    authCookieNames.map(async (cookieName) => {
+      const getCookie = await cookieStore.get(cookieName);
+      const value = getCookie?.value;
+      if (value === null || value === undefined) {
+        throw new Error(`No session found: missing ${cookieName}`);
+      }
+
+      return {
+        name: cookieName,
+        value,
+        domain: apiURL.hostname,
+        path: "/",
+        secure:
+          process.env.NODE_ENV === "production" && apiURL.protocol === "https:",
+        sameSite: "Lax" as const,
+      };
+    }),
+  );
+}
+
+export async function trpcGetBrowserCookieByName(
+  cookieStore: CookieStoreLike,
+  apiURL: URL,
+  cookieNames?: readonly string[],
+) {
+  const requestCookies = cookieNames
+    ? (
+        await Promise.all(
+          cookieNames.map(async (cookieName) => {
+            const value = (await cookieStore.get(cookieName))?.value;
+            return value === undefined ? [] : [{ name: cookieName, value }];
+          }),
+        )
+      ).flat()
+    : (await cookieStore.getAll()).flatMap(({ name, value }) =>
+        value === undefined ? [] : [{ name, value }],
+      );
+
+  return requestCookies.map(({ name, value }) => ({
+    name,
+    value,
+    domain: apiURL.hostname,
+    path: "/",
+    secure:
+      process.env.NODE_ENV === "production" && apiURL.protocol === "https:",
+    sameSite: "Lax" as const,
+  }));
+}
+
 export function getHiddenInputValue(html: string, inputName: string) {
   // Match the input by either `id` or `name`. The ASP.NET anti-forgery token
   // (__RequestVerificationToken) is rendered with only a `name` attribute and

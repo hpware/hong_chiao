@@ -1,15 +1,13 @@
 "use client";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
-
-const queryClient = new QueryClient();
-
+import { TRPCReactProvider } from "@/trpc/client";
+//NEXT_PUBLIC_APP_URL
 export default function Client({
   children,
   sidebar,
@@ -18,10 +16,13 @@ export default function Client({
   sidebar: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const showShell = pathname !== "/auth/login";
+  const showShell =
+    pathname !== "/auth/login" &&
+    !pathname.startsWith("/_appassets/") &&
+    !pathname.startsWith("/api/") && !pathname.startsWith("/_next/");
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <TRPCReactProvider>
       <SidebarProvider>
         <TooltipProvider>
           {showShell ? (
@@ -48,6 +49,6 @@ export default function Client({
           )}
         </TooltipProvider>
       </SidebarProvider>
-    </QueryClientProvider>
+    </TRPCReactProvider>
   );
 }

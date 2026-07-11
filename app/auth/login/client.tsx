@@ -16,18 +16,26 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import LoginBG from "./login_bg.jpg";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
 export default function Client() {
+  const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
   const params = useSearchParams();
   const [displayPassword, setDisplayPassword] = useState(false);
+  const [username, setUsername] = useState("");
   const isExpired = params.get("expired") === "true";
+  const prefillUserId = params.get("prefill") === "true";
 
   useEffect(() => {
     if (isExpired) toast.error("登入逾時，請重新登入");
   }, [isExpired]);
+
+  useEffect(() => {
+    setUsername(prefillUserId ? (localStorage.getItem("studentId") ?? "") : "");
+  }, [prefillUserId]);
 
   // The login screen always renders in dark mode regardless of the stored
   // preference. Restore the user's theme when leaving the page.
@@ -42,15 +50,8 @@ export default function Client() {
       root.style.colorScheme = previousColorScheme;
     };
   }, []);
-  const { data: getCaptcha } = useQuery({
-    queryKey: ["captcha"],
-    queryFn: async () => {
-      const res = await fetch("/api/auth/getCaptcha");
-      if (!res.ok) toast.error("無法取得驗證碼");
-      //toast.success("驗證碼已更新");
-      return res.json();
-    },
-  });
+  const { data: getCaptcha } = useQuery(trpc.user.getCaptcha.queryOptions());
+  const loginMutation = useMutation(trpc.user.login.mutationOptions());
 
   return (
     <>
@@ -104,29 +105,26 @@ export default function Client() {
                     !captcha
                   )
                     throw new Error("使用者帳戶, 密碼或驗證碼不可是空白");
-                  const req = await fetch("/api/auth/login", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      username,
-                      password,
-                      captcha,
-                    }),
-                  });
-                  const res = await req.json();
-                  if (!res.success || !req.ok) {
-                    // clear captcha
+                  let res;
+                  try {
+                    res = await loginMutation.mutateAsync({
+                      username: String(username),
+                      password: String(password),
+                      captcha: String(captcha),
+                    });
+                  } catch (err) {
+                    // The mutation throws (UNAUTHORIZED) on bad credentials —
+                    // clear and refresh the captcha, then rethrow for the toast.
                     const captchaInput = form.querySelector(
                       'input[name="captcha"]',
                     ) as HTMLInputElement | null;
                     if (captchaInput) captchaInput.value = "";
-                    queryClient.invalidateQueries({
-                      queryKey: ["captcha"],
-                    });
-                    throw new Error(`${res.hdfText}`);
+                    queryClient.invalidateQueries(
+                      trpc.user.getCaptcha.queryFilter(),
+                    );
+                    throw err;
                   }
+                  localStorage.setItem("studentId", String(username)); // only used for the reset password flow (auto relogin)
                   const nextPath = new URLSearchParams(
                     window.location.search,
                   ).get("next");
@@ -148,7 +146,7 @@ export default function Client() {
                 },
                 {
                   success: (res) =>
-                    `登入成功! 耗時${Number(res.duration / 1000).toPrecision(2)}秒${res.changePasswordNotice ? "，另外您的密碼以六個月沒更換，請盡快更換系統密碼。" : ""}`,
+                    `登入成功! 耗時${Number(res.duration).toPrecision(2)}秒${res.changePasswordNotice ? "，另外您的密碼以六個月沒更換，請盡快更換系統密碼。" : ""}`,
                   loading: "登入中...",
                   error: (e) => `錯誤: ${e.message}`,
                 },
@@ -166,7 +164,13 @@ export default function Client() {
                 <UserIcon />
                 <span>學號:</span>
               </label>{" "}
-              <Input className="px-3 py-2" type="text" name="username" />
+              <Input
+                className="px-3 py-2"
+                type="text"
+                name="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
             </div>
             <div>
               <label className="text-lg flex flex-row space-x-1 items-center">
@@ -181,6 +185,8 @@ export default function Client() {
                 />
                 <Button
                   type="button"
+                  variant="outline"
+                  size="icon"
                   onClick={() => {
                     setDisplayPassword(!displayPassword);
                   }}
@@ -189,23 +195,32 @@ export default function Client() {
                   {displayPassword ? <Eye /> : <EyeClosed />}
                 </Button>
               </div>
-              <div>
+              <div className="pt-2">
                 <label className="text-lg flex flex-row space-x-1 items-center">
                   <ShieldCheckIcon />
                   <span>驗證碼:</span>
                 </label>
                 <div className="flex flex-row space-x-1 max-w-80">
-                  <Image
-                    src={getCaptcha?.image}
-                    alt="captcha"
-                    width={150}
-                    height={40}
-                    onClick={(e) => {
-                      queryClient.invalidateQueries({
-                        queryKey: ["captcha"],
-                      });
-                    }}
-                  />
+                  {getCaptcha?.image ? (
+                    <Image
+                      src={getCaptcha.image}
+                      alt="captcha"
+                      width={150}
+                      height={40}
+                      onClick={() => {
+                        queryClient.invalidateQueries(
+                          trpc.user.getCaptcha.queryFilter(),
+                        );
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="flex items-center justify-center rounded border text-sm text-muted-foreground"
+                      style={{ width: 150, height: 40 }}
+                    >
+                      載入中…
+                    </div>
+                  )}
                   <Input className="px-3 py-2" type="text" name="captcha" />
                 </div>{" "}
               </div>
