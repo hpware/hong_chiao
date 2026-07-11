@@ -41,16 +41,6 @@ import { toast } from "sonner";
 
 const navItems = [
   {
-    title: "AI",
-    items: [
-      {
-        title: "機器人",
-        href: "/chat",
-        icon: BotMessageSquareIcon,
-      },
-    ],
-  },
-  {
     title: "假單",
     items: [
       {
@@ -150,7 +140,7 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
   useEffect(() => {
     if (renewQuery.error?.data?.code === "UNAUTHORIZED") {
       toast.error("Session 過期 請重新登入");
-      router.push("/api/auth/logout?expired=true");
+      router.push("/api/auth/logout?prefill=true");
     }
   }, [renewQuery.error, router]);
 

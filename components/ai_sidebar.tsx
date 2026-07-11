@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction } from "react";
-import { Sheet, SheetContent, SheetTitle } from "./ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import Link from "next/link";
 import openai from "openai";
 
