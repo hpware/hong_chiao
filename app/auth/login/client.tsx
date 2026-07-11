@@ -25,11 +25,17 @@ export default function Client() {
   const queryClient = useQueryClient();
   const params = useSearchParams();
   const [displayPassword, setDisplayPassword] = useState(false);
+  const [username, setUsername] = useState("");
   const isExpired = params.get("expired") === "true";
+  const prefillUserId = params.get("prefill") === "true";
 
   useEffect(() => {
     if (isExpired) toast.error("登入逾時，請重新登入");
   }, [isExpired]);
+
+  useEffect(() => {
+    setUsername(prefillUserId ? (localStorage.getItem("studentId") ?? "") : "");
+  }, [prefillUserId]);
 
   // The login screen always renders in dark mode regardless of the stored
   // preference. Restore the user's theme when leaving the page.
@@ -118,6 +124,7 @@ export default function Client() {
                     );
                     throw err;
                   }
+                  localStorage.setItem("studentId", String(username)); // only used for the reset password flow (auto relogin)
                   const nextPath = new URLSearchParams(
                     window.location.search,
                   ).get("next");
@@ -157,7 +164,13 @@ export default function Client() {
                 <UserIcon />
                 <span>學號:</span>
               </label>{" "}
-              <Input className="px-3 py-2" type="text" name="username" />
+              <Input
+                className="px-3 py-2"
+                type="text"
+                name="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
             </div>
             <div>
               <label className="text-lg flex flex-row space-x-1 items-center">
@@ -180,7 +193,7 @@ export default function Client() {
                   {displayPassword ? <Eye /> : <EyeClosed />}
                 </Button>
               </div>
-              <div>
+              <div className="pt-2">
                 <label className="text-lg flex flex-row space-x-1 items-center">
                   <ShieldCheckIcon />
                   <span>驗證碼:</span>

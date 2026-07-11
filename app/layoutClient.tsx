@@ -19,7 +19,7 @@ export default function Client({
   const showShell =
     pathname !== "/auth/login" &&
     !pathname.startsWith("/_appassets/") &&
-    !pathname.startsWith("/api/");
+    !pathname.startsWith("/api/") && !pathname.startsWith("/_next/");
 
   return (
     <TRPCReactProvider>

@@ -45,20 +45,10 @@ import GetCaptchaImage from "@/components/px_items/user/captcha";
 import LoginFunction from "@/components/px_items/user/login";
 import GetUserName from "@/components/px_items/user/name";
 import RenewTimeoutTimer from "@/components/px_items/user/renewTimeoutTimer";
-import ChangePasswordRequest from "@/components/px_items/user/changePassword";
+import ChangePassword from "@/components/px_items/user/changePassword";
+import LogoutRemote from "@/components/px_items/user/logout";
 
 export const appRouter = createTRPCRouter({
-  hello: baseProcedure
-    .input(
-      z.object({
-        text: z.string(),
-      }),
-    )
-    .query((opts) => {
-      return {
-        greeting: `hello ${opts.input.text}`,
-      };
-    }),
   indexPage: createTRPCRouter({
     basicLeaveData: baseProcedure
       .input(
@@ -133,6 +123,9 @@ export const appRouter = createTRPCRouter({
         });
       }),
   }),
+  leave: createTRPCRouter({}),
+  certificate: createTRPCRouter({}),
+  tuition: createTRPCRouter({}),
   // auth/user
   user: createTRPCRouter({
     getCaptcha: baseProcedure.query(async (opts) => {
@@ -248,7 +241,45 @@ export const appRouter = createTRPCRouter({
           duration: (Date.now() - startTime) / 1000,
         };
       }),
-    // logout is still the same. Due to the component requires redirecting to the login page.
+    // logout is still the same. Due to some components that require redirecting to the login page.
+    // this is for some applications that use muations to submit logouts, some will migrate through, but some not, like the sidebar button one, it will prob be changed, but the auto logout on session fail thingy will still use that endpoint.
+    logout: baseProcedure.mutation(async () => {
+      const rawUrl = process.env.API_URL;
+      if (!rawUrl) {
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+        });
+      }
+      const apiUrl = rawUrl;
+      const url = new URL(apiUrl);
+      const cookieStore = await cookies();
+      let browserCookies;
+      try {
+        browserCookies = await getBrowserCookies(cookieStore, url);
+      } catch {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Session 過期了或無效。請重新登入。",
+        });
+      }
+
+      await LogoutRemote(browserCookies);
+      for (const cookieName of [
+        "ASP.NET_SessionId",
+        "ssClientIP",
+        "ssAID",
+        "ssSchID",
+        "ssSchName",
+        "ssLoginID",
+        "ssLoginForLDAP",
+        "ssLoginName",
+      ]) {
+        cookieStore.delete(cookieName);
+      }
+      return { success: true };
+    }),
     renewTimer: baseProcedure.query(async () => {
       const rawUrl = process.env.API_URL;
 
@@ -262,7 +293,6 @@ export const appRouter = createTRPCRouter({
       const url = new URL(rawUrl);
       const cookieStore = await cookies();
 
-      // Missing session cookies == already logged out.
       let browserCookies;
       try {
         browserCookies = await getBrowserCookies(cookieStore, url);
@@ -308,6 +338,75 @@ export const appRouter = createTRPCRouter({
     detailedInfo: baseProcedure.query(async () => {
       return "Currently in WIP, please do not use this endpoint, this will change soon.";
     }),
+    changePassword: baseProcedure
+      .input(
+        z.object({
+          newPassword: z
+            .string()
+            .regex(
+              /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d&!@#$%^*()+=_~]{8,20}$/,
+              "密碼需要包含 8~20 位的英文大小寫與數字，並僅可以包含這些符號 &!@#$%^*()+=_~。",
+            ),
+        }),
+      )
+      .mutation(async (opts) => {
+        const rawUrl = process.env.API_URL;
+
+        if (!rawUrl) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message:
+              "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+          });
+        }
+        const apiUrl = rawUrl;
+        const url = new URL(apiUrl);
+        const cookieStore = await cookies();
+        let browserCookies;
+        try {
+          browserCookies = await getBrowserCookies(cookieStore, url);
+        } catch {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Session 過期了或無效。請重新登入。",
+          });
+        }
+        const startTime = Date.now();
+        const resetPassword = await ChangePassword(
+          browserCookies,
+          opts.input.newPassword,
+        );
+        if (!resetPassword.success)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: String(resetPassword.message).replace(
+              "-clXObjS.SBAS:-clYObjS_BAS.BASSaveUserRole:-SBAS_SaveUserRole:",
+              "",
+            ),
+          });
+        for (const cookieName of [
+          "ASP.NET_SessionId",
+          "ssClientIP",
+          "ssAID",
+          "ssSchID",
+          "ssSchName",
+          "ssLoginID",
+          "ssLoginForLDAP",
+          "ssLoginName",
+        ]) {
+          cookieStore.delete(cookieName);
+        }
+        return {
+          success: resetPassword.success,
+          duration: (Date.now() - startTime) / 1000,
+          message: String(resetPassword.message).replace(
+            "-clXObjS.SBAS:-clYObjS_BAS.BASSaveUserRole:-SBAS_SaveUserRole:",
+            "",
+          ),
+        };
+        //錯誤: -clXObjS.SBAS:-clYObjS_BAS.BASSaveUserRole:-SBAS_SaveUserRole:新密碼與前兩代密碼重複，請重新設定新密碼。
+        // nukr -:
+      }),
   }),
 });
 // export type definition of API

@@ -13,11 +13,19 @@ function redirectToLogin(request: NextRequest, isExpired = false) {
     ),
   );
 
-  for (const cookieName of authCookieNames) {
+  for (const cookieName of [
+    "ASP.NET_SessionId",
+    "ssClientIP",
+    "ssAID",
+    "ssSchID",
+    "ssSchName",
+    "ssLoginID",
+    "ssLoginForLDAP",
+    "ssLoginName",
+  ]) {
     response.cookies.delete(cookieName);
   }
 
-  response.cookies.delete("ssLoginForLDAP");
 
   return response;
 }
