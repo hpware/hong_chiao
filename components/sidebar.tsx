@@ -20,6 +20,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Award,
+  BinocularsIcon,
+  BotMessageSquareIcon,
   ClipboardList,
   DiamondPercentIcon,
   HandCoins,
@@ -32,17 +34,29 @@ import {
   User2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
+import { toast } from "sonner";
 
 const navItems = [
+  {
+    title: "AI",
+    items: [
+      {
+        title: "機器人",
+        href: "/chat",
+        icon: BotMessageSquareIcon,
+      },
+    ],
+  },
   {
     title: "假單",
     items: [
       {
-        title: "舊假單",
+        title: "查詢假單",
         href: "/leave",
-        icon: ClipboardList,
+        icon: BinocularsIcon,
       },
       {
         title: "申請",
@@ -62,11 +76,16 @@ const navItems = [
     ],
   },
   {
-    title: "就學抵免",
+    title: "學費",
     items: [
       {
+        title: "查詢學費資訊",
+        href: "/tuition",
+        icon: BinocularsIcon,
+      },
+      {
         title: "抵免申請",
-        href: "/discount",
+        href: "/tuition/discount",
         icon: DiamondPercentIcon,
       },
     ],
@@ -96,66 +115,44 @@ export default function MainSidebar() {
 function MainSidebarContent({ pathname }: { pathname: string }) {
   const router = useRouter();
   const { setOpenMobile } = useSidebar();
+  const trpc = useTRPC();
   const [userId, setUserId] = useState("");
+  // Only hit the server when we don't already have the name cached locally.
+  const [needsFetch, setNeedsFetch] = useState(false);
 
   useEffect(() => {
-    const checkLocalStorage = localStorage.getItem("user");
-
-    if (checkLocalStorage) {
-      setUserId(checkLocalStorage);
-    } else {
-      const fetchUserId = async () => {
-        try {
-          const response = await fetch("/api/userInfo/name");
-          if (!response.ok) {
-            throw new Error("Failed to fetch user ID");
-          }
-          const data = await response.json();
-          localStorage.setItem("user", data.name);
-          setUserId(data.name);
-        } catch (error) {
-          console.error("Error fetching user ID:", error);
-        }
-      };
-      fetchUserId();
-    }
+    const cached = localStorage.getItem("user");
+    if (cached) setUserId(cached);
+    else setNeedsFetch(true);
   }, []);
+
+  const userNameQuery = useQuery(
+    trpc.user.name.queryOptions(undefined, { enabled: needsFetch }),
+  );
+  useEffect(() => {
+    if (userNameQuery.data?.name) {
+      setUserId(userNameQuery.data.name);
+      localStorage.setItem("user", userNameQuery.data.name);
+    }
+  }, [userNameQuery.data?.name]);
 
   const schoolName = useMemo(
     () => process.env.NEXT_PUBLIC_SCHOOL_NAME || "校務系統",
     [],
   );
 
-  const renewSession = useCallback(async () => {
-    const response = await fetch("/api/auth/renewTimeoutTimer?kick=direct");
-    const data = await response.json();
-    if (response.status === 401 || response.status === 307) {
-      // sess expired
-
+  const renewQuery = useQuery(
+    trpc.user.renewTimer.queryOptions(undefined, {
+      refetchInterval: 10 * 60 * 1000,
+    }),
+  );
+  // On an expired/invalid session the procedure throws UNAUTHORIZED — kick to logout.
+  useEffect(() => {
+    if (renewQuery.error?.data?.code === "UNAUTHORIZED") {
+      toast.error("Session 過期 請重新登入");
       router.push("/api/auth/logout?expired=true");
     }
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to renew session");
-    }
-
-    return data;
-  }, [router]);
-
-  const renewQuery = useQuery({
-    queryKey: ["renewSession"],
-    queryFn: renewSession,
-  });
-  // renew every ten minutes
-  useEffect(() => {
-    const interval = setInterval(
-      () => {
-        renewQuery.refetch();
-      },
-      10 * 60 * 1000,
-    );
-
-    return () => clearInterval(interval);
-  }, [renewQuery.refetch]);
+  }, [renewQuery.error, router]);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">

@@ -1,0 +1,4 @@
+reviews:
+  auto_review:
+    enabled: false
+# disable coderabbit, and switch to greptile for this repo.

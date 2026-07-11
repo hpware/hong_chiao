@@ -1,6 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import { useTRPC } from "@/trpc/client";
 import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
 import {
@@ -38,21 +39,15 @@ const randomTitleText = ["您好！", "歡迎回來！"];
 const randomDescText = [""];
 
 export default function Client() {
+  const trpc = useTRPC();
   const semester = getSemesterFromDate();
 
-  const { data: queryData } = useQuery<LeaveResponse>({
-    queryKey: ["homeData", semester.year, semester.sem],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/home/data?year=${semester.year}&semistry=${semester.sem}`,
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch leave data");
-      }
-      return response.json();
-    },
-  });
+  const { data: queryData } = useQuery(
+    trpc.home.data.queryOptions({
+      year: semester.year,
+      semistry: semester.sem,
+    }),
+  );
 
   const cards = useMemo(() => {
     const leaveCards =
@@ -72,39 +67,20 @@ export default function Client() {
     ];
   }, [queryData]);
 
-  const { data: announcements } = useQuery<AnnouncementsResponse>({
-    queryKey: ["announcements"],
-    queryFn: async () => {
-      const res = await fetch("/api/home/announcements");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to fetch announcements.");
-      }
-      return res.json();
-    },
-  });
+  const { data: announcements } = useQuery(
+    trpc.home.announcements.queryOptions(),
+  );
 
   const annoucementsData = useMemo(
     () => announcements?.data.map((item) => ({ ...item })) ?? [],
     [announcements],
   );
 
-  const { data: userId } = useQuery({
-    queryKey: ["userId"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/userInfo/name");
-        if (!response.ok) {
-          throw new Error("Failed to fetch user ID");
-        }
-        const data = await response.json();
-        localStorage.setItem("user", data.name);
-        return data.name;
-      } catch (error) {
-        console.error("Error fetching user ID:", error);
-      }
-    },
-  });
+  const { data: userInfo } = useQuery(trpc.user.name.queryOptions());
+  useEffect(() => {
+    if (userInfo?.name) localStorage.setItem("user", userInfo.name);
+  }, [userInfo?.name]);
+  const userId = userInfo?.name;
 
   const titleText = useMemo(
     () => randomTitleText[Math.floor(Math.random() * randomTitleText.length)],
@@ -182,8 +158,8 @@ export default function Client() {
           );
         })}
       </div>
-      <Table columns={[]} data={annoucementsData || []} />
-      <div className="rounded-lg border border-border bg-background p-4 shadow-sm"></div>
+      <Table columns={[]} data={annoucementsData || []} className="mt-5 mx-7" />
+      {/*<div className="rounded-lg border border-border bg-background p-4 shadow-sm"></div> */}
     </div>
   );
 }

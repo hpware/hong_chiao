@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { rejects } from "node:assert";
 import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
+import { useTRPC } from "@/trpc/client";
 
 type LeaveRow = {
   Objid?: number | string;
@@ -37,22 +38,17 @@ export default function Client({ id }: { id: string }) {
     passed: true,
     rejected: true,
   });
+  const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { data } = useQuery<LeaveResponse>({
-    queryKey: ["leaveData"],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/leave?year=${requestType.year}&semi=${requestType.sem}${requestType.editing ? "&editing=true" : ""}${requestType.reviewing ? "&reviewing=true" : ""}${requestType.passed ? "&passed=true" : ""}${requestType.rejected ? "&rejected=true" : ""}`,
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch leave data");
-      }
-      return response.json();
-    },
-  });
+  const { data } = useQuery(
+    trpc.leave.list.queryOptions({
+      year: requestType.year,
+      semi: requestType.sem,
+    }),
+  );
   const memoedData = useMemo(() => {
-    const leaveRows = Array.isArray(data?.data) ? data.data : [];
+    const leaveData = data as LeaveResponse | undefined;
+    const leaveRows = Array.isArray(leaveData?.data) ? leaveData.data : [];
 
     return leaveRows.flatMap((item) => {
       const leaveDays = Number(item.Days ?? item.leaveDays);

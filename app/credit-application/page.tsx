@@ -7,6 +7,7 @@ import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { useTRPC } from "@/trpc/client";
 
 type CreditApplicationRow = {
   objid: string;
@@ -35,22 +36,8 @@ type CreditApplicationResponse = {
 };
 
 export default function Page() {
-  const { data } = useQuery<CreditApplicationResponse>({
-    queryKey: ["creditApplicationData"],
-    queryFn: async () => {
-      const response = await fetch(`/api/credit-application`);
-      const responseData = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          responseData.error || "Failed to fetch credit application data",
-        );
-      }
-      if (responseData.error || responseData.errMsg) {
-        throw new Error(responseData.error || responseData.errMsg);
-      }
-      return responseData;
-    },
-  });
+  const trpc = useTRPC();
+  const { data } = useQuery(trpc.creditApplication.list.queryOptions());
 
   const creditApplicationRows = useMemo(() => {
     return Array.isArray(data?.data) ? data.data : [];
@@ -85,7 +72,7 @@ export default function Page() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      <Button className="px-2 py-0 m-0">
+                      <Button size="sm" variant="outline">
                         學校資訊
                         <ExternalLink className="size-3.5" />
                       </Button>
@@ -97,7 +84,7 @@ export default function Page() {
                     href="/credit-application/apply/[id]"
                     as={`/credit-application/apply/${row.original.Code}`}
                   >
-                    <Button className="px-2 py-0 m-0">申請</Button>
+                    <Button size="sm">申請</Button>
                   </Link>
                 </div>
               ),
