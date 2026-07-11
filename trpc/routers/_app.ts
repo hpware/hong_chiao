@@ -614,7 +614,7 @@ export const appRouter = createTRPCRouter({
       const { browserCookies } = await requireBrowserCookies(apiUrl);
       const data = await GetCertificate(browserCookies);
 
-      if (data.OK) throwUnauthorized();
+      if (!data.OK) throwUnauthorized();
       return {
         success: data.OK,
         errMsg: data.MSG,
@@ -626,7 +626,7 @@ export const appRouter = createTRPCRouter({
       const { browserCookies } = await requireBrowserCookies(apiUrl);
       const data = await AddCertificate(browserCookies);
 
-      if (data.OK) throwUnauthorized();
+      if (!data.OK) throwUnauthorized();
       return data;
     }),
     submit: baseProcedure.mutation(async () => {
@@ -634,7 +634,7 @@ export const appRouter = createTRPCRouter({
       const { browserCookies } = await requireBrowserCookies(apiUrl);
       const data = await SubmitCertificate(browserCookies);
 
-      if (data.OK) throwUnauthorized();
+      if (!data.OK) throwUnauthorized();
       return {
         success: data.OK,
         errMsg: data.MSG,
@@ -747,7 +747,7 @@ export const appRouter = createTRPCRouter({
           String(opts.input.semistry),
         );
 
-        if (data.OK) throwUnauthorized();
+        if (!data.OK) throwUnauthorized();
         return {
           success: data.OK,
           errMsg: data.MSG,
@@ -1138,9 +1138,18 @@ export const appRouter = createTRPCRouter({
       const apiUrl = rawUrl;
       const url = new URL(apiUrl);
       const cookieStore = await cookies();
-      const browserCookies = await getBrowserCookies(cookieStore, url);
+      let browserCookies;
+      try {
+        browserCookies = await getBrowserCookies(cookieStore, url);
+      } catch {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Session 過期了或無效。請重新登入。",
+        });
+      }
       const startTime = Date.now();
       const getName = await GetUserName(browserCookies);
+      if (!getName.success) throwUnauthorized();
       return {
         success: getName.success,
         name: getName.name,
@@ -1229,7 +1238,6 @@ export const appRouter = createTRPCRouter({
           key: z.string(),
           model: z.string(),
         }),
-        
       }),
     )
     .mutation(async (opts) => {}),
