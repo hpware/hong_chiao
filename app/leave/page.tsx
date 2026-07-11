@@ -1,5 +1,5 @@
 "use client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Table from "@/components/table";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { InfoIcon, Pen, PencilIcon, SendIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
+import { useTRPC } from "@/trpc/client";
 
 type LeaveRow = {
   Objid?: number | string;
@@ -26,22 +27,18 @@ export default function Page() {
     year: number;
     sem: number;
   }>(getSemesterFromDate);
+  const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { data } = useQuery<LeaveResponse>({
-    queryKey: ["leaveData"],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/leave?year=${requestType.year}&semi=${requestType.sem}`,
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch leave data");
-      }
-      return response.json();
-    },
-  });
+  const deleteLeave = useMutation(trpc.leave.delete.mutationOptions());
+  const { data } = useQuery(
+    trpc.leave.list.queryOptions({
+      year: requestType.year,
+      semi: requestType.sem,
+    }),
+  );
   const memoedData = useMemo(() => {
-    const leaveRows = Array.isArray(data?.data) ? data.data : [];
+    const leaveData = data as LeaveResponse | undefined;
+    const leaveRows = Array.isArray(leaveData?.data) ? leaveData.data : [];
 
     return leaveRows.flatMap((item) => {
       const leaveDays = Number(item.Days ?? item.leaveDays);
@@ -108,21 +105,15 @@ export default function Page() {
                   toast.promise(
                     async () => {
                       const objId = Number(row.original.Objid);
-                      const req = await fetch("/api/leave", {
-                        method: "DELETE",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                          id: objId,
-                        }),
-                      });
-                      const res = await req.json();
+                      const res = await deleteLeave.mutateAsync({ id: objId });
                       if (!res.success) {
-                        throw new Error(res.error || "刪除失敗");
+                        throw new Error("刪除失敗");
                       }
                       queryClient.invalidateQueries({
-                        queryKey: ["leaveData"],
+                        queryKey: trpc.leave.list.queryKey({
+                          year: requestType.year,
+                          semi: requestType.sem,
+                        }),
                       });
                       return;
                     },

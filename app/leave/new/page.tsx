@@ -1,9 +1,10 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Table from "@/components/table";
 import { memo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { getSemesterFromDate } from "@/lib/semester";
+import { useTRPC } from "@/trpc/client";
 
 import {
   NativeSelect,
@@ -45,7 +46,7 @@ function getInitialRequestType() {
 }
 
 type Period = {
-  classIndex: string;
+  classIndex: string | number;
   sendData: string | null;
   show: boolean;
   selected: boolean;
@@ -81,6 +82,7 @@ const PeriodButton = memo(function PeriodButton({
 });
 
 export default function Page() {
+  const trpc = useTRPC();
   const [requestType, setRequestType] = useState<{
     year: number;
     sem: number;
@@ -88,33 +90,22 @@ export default function Page() {
     endDate: string;
   }>(getInitialRequestType);
   const selectedPeriodsRef = useRef(new Map<string, string>());
+  const createLeave = useMutation(trpc.leave.create.mutationOptions());
 
-  const { data: basicData } = useQuery({
-    queryKey: ["basicData", requestType.year, requestType.sem],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/leave/getBasicInfo?year=${requestType.year}&semi=${requestType.sem}`,
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch leave data");
-      }
-      return response.json();
-    },
-  });
-  const { data: tableData } = useQuery({
-    queryKey: ["leaveDateData", requestType],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/leave/getClassDetails?start=${requestType.startDate}&end=${requestType.endDate}&year=${requestType.year}&semi=${requestType.sem}`,
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch leave data");
-      }
-      return response.json();
-    },
-  });
+  const { data: basicData } = useQuery(
+    trpc.leave.basicInfo.queryOptions({
+      year: requestType.year,
+      semi: requestType.sem,
+    }),
+  );
+  const { data: tableData } = useQuery(
+    trpc.leave.classDetails.queryOptions({
+      start: requestType.startDate,
+      end: requestType.endDate,
+      year: requestType.year,
+      semi: requestType.sem,
+    }),
+  );
 
   const uploadFiles = () => {
     toast.promise(
@@ -172,12 +163,7 @@ export default function Page() {
                     throw new Error("請至少選擇一個節次");
                   }
 
-                  const response = await fetch("/api/leave", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
+                  await createLeave.mutateAsync({
                       year: requestType.year,
                       sem: requestType.sem,
                       reason,
@@ -187,15 +173,7 @@ export default function Page() {
                       ).map((value) => value),
                       startDate: requestType.startDate,
                       endDate: requestType.endDate,
-                    }),
                   });
-
-                  if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(
-                      errorData.error || "Failed to submit leave request",
-                    );
-                  }
                 },
                 {
                   success: "假單提交成功！",

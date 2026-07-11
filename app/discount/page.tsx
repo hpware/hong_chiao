@@ -29,7 +29,6 @@ type LeaveResponse = {
 };
 
 export default function Page() {
-  return <div>Feature not done yet. Please view this at a later date.</div>;
   const [requestType, setRequestType] = useState<{
     year: number;
     sem: number;

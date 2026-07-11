@@ -161,18 +161,7 @@ function ChangeUserInfo() {
         onSubmit={(e) => {
           e.preventDefault();
           toast.promise(async () => {
-            const formData = new FormData(e.currentTarget);
-            const oldPassword = formData.get("oldPassword")?.toString() || "";
-            const newPassword = formData.get("newPassword")?.toString() || "";
-            const confirmPassword =
-              formData.get("confirmPassword")?.toString() || "";
-
-            const changePasswordRequest = await fetch(
-              "/api/auth/changePassword",
-              {
-                method: "POST",
-              },
-            );
+            throw new Error("更改使用者資訊功能尚未完成。");
           });
         }}
       >

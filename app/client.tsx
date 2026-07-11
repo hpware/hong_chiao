@@ -42,19 +42,12 @@ export default function Client() {
   const trpc = useTRPC();
   const semester = getSemesterFromDate();
 
-  const { data: queryData } = useQuery<LeaveResponse>({
-    queryKey: ["homeData", semester.year, semester.sem],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/home/data?year=${semester.year}&semistry=${semester.sem}`,
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch leave data");
-      }
-      return response.json();
-    },
-  });
+  const { data: queryData } = useQuery(
+    trpc.home.data.queryOptions({
+      year: semester.year,
+      semistry: semester.sem,
+    }),
+  );
 
   const cards = useMemo(() => {
     const leaveCards =
@@ -74,17 +67,9 @@ export default function Client() {
     ];
   }, [queryData]);
 
-  const { data: announcements } = useQuery<AnnouncementsResponse>({
-    queryKey: ["announcements"],
-    queryFn: async () => {
-      const res = await fetch("/api/home/announcements");
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to fetch announcements.");
-      }
-      return res.json();
-    },
-  });
+  const { data: announcements } = useQuery(
+    trpc.home.announcements.queryOptions(),
+  );
 
   const annoucementsData = useMemo(
     () => announcements?.data.map((item) => ({ ...item })) ?? [],
