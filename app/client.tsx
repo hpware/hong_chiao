@@ -11,6 +11,7 @@ import {
   RotateCcwKeyIcon,
 } from "lucide-react";
 import Table from "@/components/table";
+import DOMPurify from "dompurify";
 
 type LeaveResponse = {
   success: boolean;
@@ -158,7 +159,47 @@ export default function Client() {
           );
         })}
       </div>
-      <Table columns={[]} data={annoucementsData || []} className="mt-5 mx-7" />
+      <div className="mt-5 mx-7">
+        <h1 className="text-1xl">公布欄</h1>
+        <Table
+          columns={[
+            {
+              header: "",
+              accessorKey: "date",
+              cell: ({ row }) => (
+                <span>
+                  <span className="font-bold text-base">
+                    {row.original.unit.trim().length === 0
+                      ? "系統訊息"
+                      : row.original.unit}
+                  </span>
+                  {"  "}
+                  <span className="text-xs">
+                    公告到:
+                    {row.original.date.replace(/^\d{4}\/\d{2}\/\d{2}\~/, "")}
+                  </span>
+                </span>
+              ),
+            },
+            {
+              header: "公布資訊",
+              accessorKey: "content",
+              cell: ({ row }) => (
+                <span
+                  className="break-all"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(
+                      row.original.content.replaceAll("\n", "<br/>"),
+                    ),
+                  }}
+                ></span>
+              ),
+            },
+          ]}
+          data={annoucementsData || []}
+        />
+      </div>
+
       {/*<div className="rounded-lg border border-border bg-background p-4 shadow-sm"></div> */}
     </div>
   );

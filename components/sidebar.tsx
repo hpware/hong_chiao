@@ -156,6 +156,7 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarRail />
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between gap-3">
           <Link

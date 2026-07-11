@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import MainSidebar from "@/components/sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import HeadClient from "./headClient";
+import AiSidebar from "@/components/ai_sidebar";
 
 const themeInitScript = `
 (() => {
