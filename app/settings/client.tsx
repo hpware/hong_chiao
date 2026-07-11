@@ -205,6 +205,7 @@ function ChangeSiteSettingsOnThisDevice() {
     apiToken: "",
     aiModel: "",
     aiBypassCors: "",
+    aiDisabled: "",
   });
 
   useEffect(() => {
@@ -213,6 +214,7 @@ function ChangeSiteSettingsOnThisDevice() {
       apiToken: localStorage.getItem("ai_apiToken") ?? "",
       aiModel: localStorage.getItem("ai_model") ?? "",
       aiBypassCors: localStorage.getItem("ai_bypassCors") ?? "",
+      aiDisabled: localStorage.getItem("ai_disabled") ?? "",
     });
   }, []);
 
@@ -234,6 +236,7 @@ function ChangeSiteSettingsOnThisDevice() {
               const aiBypassCors = formData.has("ai_BypassCors")
                 ? "true"
                 : "false";
+              const aiDisabled = formData.has("aiDisabled") ? "true" : "false";
               if (!apiUrl || !apiToken || !aiModel)
                 throw new Error("API URL, API Token 和 Model 都必須填寫");
               if (!apiUrl.startsWith("https://"))
@@ -243,7 +246,13 @@ function ChangeSiteSettingsOnThisDevice() {
               localStorage.setItem("ai_apiToken", apiToken);
               localStorage.setItem("ai_model", aiModel);
               localStorage.setItem("ai_bypassCors", aiBypassCors);
-              setPreSetDetails({ apiUrl, apiToken, aiModel, aiBypassCors });
+              setPreSetDetails({
+                apiUrl,
+                apiToken,
+                aiModel,
+                aiBypassCors,
+                aiDisabled,
+              });
             },
             {
               success: "設定已保存",
@@ -252,6 +261,24 @@ function ChangeSiteSettingsOnThisDevice() {
           );
         }}
       >
+        <div className="flex flex-row space-x-1 items-center">
+          <label className="text-sm flex flex-row space-x-1 items-center">
+            <LinkIcon className="p-1" />
+            <span>關閉 AI 功能</span>
+          </label>
+          <input
+            className="px-3 py-2"
+            name="ai_disableFeature"
+            type="checkbox"
+            checked={preSetDetails.aiDisabled === "true"}
+            onChange={(e) => {
+              setPreSetDetails((prev) => ({
+                ...prev,
+                aiDisabled: e.target.checked ? "true" : "false",
+              }));
+            }}
+          />
+        </div>
         <div>
           <label className="text-sm flex flex-row space-x-1 items-center">
             <LinkIcon className="p-1" />

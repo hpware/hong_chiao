@@ -57,7 +57,7 @@ export default function Client({
                   ></Button>
                 </header>
                 {children}
-                <AiSidebar aiOpen setAiOpen={setAiOpen} />
+                <AiSidebar aiOpen={aiOpen} setAiOpen={setAiOpen} />
               </SidebarInset>
             </>
           ) : (
