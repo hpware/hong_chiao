@@ -13,7 +13,7 @@ import {
   Scale,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function Client() {
@@ -201,11 +201,21 @@ function ChangeSiteSettingsOnThisDevice() {
     token: false,
   });
   const [preSetDetails, setPreSetDetails] = useState({
-    apiUrl: localStorage.getItem("ai_apiUrl") ?? "",
-    apiToken: localStorage.getItem("ai_apiToken") ?? "",
-    aiModel: localStorage.getItem("ai_model") ?? "",
-    aiBypassCors: localStorage.getItem("ai_bypassCors") ?? "",
+    apiUrl: "",
+    apiToken: "",
+    aiModel: "",
+    aiBypassCors: "",
   });
+
+  useEffect(() => {
+    setPreSetDetails({
+      apiUrl: localStorage.getItem("ai_apiUrl") ?? "",
+      apiToken: localStorage.getItem("ai_apiToken") ?? "",
+      aiModel: localStorage.getItem("ai_model") ?? "",
+      aiBypassCors: localStorage.getItem("ai_bypassCors") ?? "",
+    });
+  }, []);
+
   return (
     <div className="border rounded p-2">
       <h3 className="text-md">更改網站設定</h3>
@@ -215,15 +225,15 @@ function ChangeSiteSettingsOnThisDevice() {
           e.preventDefault();
           toast.promise(
             async () => {
-              const formData = new FormData(e.target as HTMLFormElement);
+              const formData = new FormData(e.currentTarget);
               const apiUrl = formData.get("ai_ApiUrl")?.toString() as string;
               const apiToken = formData
                 .get("ai_ApiToken")
                 ?.toString() as string;
               const aiModel = formData.get("ai_Model")?.toString() as string;
-              const aiBypassCors = formData
-                .get("ai_BypassCors")
-                ?.toString() as string;
+              const aiBypassCors = formData.has("ai_BypassCors")
+                ? "true"
+                : "false";
               if (!apiUrl || !apiToken || !aiModel)
                 throw new Error("API URL, API Token 和 Model 都必須填寫");
               if (!apiUrl.startsWith("https://"))
@@ -232,6 +242,7 @@ function ChangeSiteSettingsOnThisDevice() {
               localStorage.setItem("ai_apiUrl", apiUrl);
               localStorage.setItem("ai_apiToken", apiToken);
               localStorage.setItem("ai_model", aiModel);
+              localStorage.setItem("ai_bypassCors", aiBypassCors);
               setPreSetDetails({ apiUrl, apiToken, aiModel, aiBypassCors });
             },
             {
@@ -251,7 +262,13 @@ function ChangeSiteSettingsOnThisDevice() {
               className="px-3 py-2"
               name="ai_ApiUrl"
               type="text"
-              defaultValue={preSetDetails.apiUrl}
+              value={preSetDetails.apiUrl}
+              onChange={(e) => {
+                setPreSetDetails((prev) => ({
+                  ...prev,
+                  apiUrl: e.target.value,
+                }));
+              }}
             />
           </div>
         </div>
@@ -265,7 +282,13 @@ function ChangeSiteSettingsOnThisDevice() {
               className="px-3 py-2"
               name="ai_ApiToken"
               type={displaySecureDetails.token ? "text" : "password"}
-              defaultValue={preSetDetails.apiToken}
+              value={preSetDetails.apiToken}
+              onChange={(e) => {
+                setPreSetDetails((prev) => ({
+                  ...prev,
+                  apiToken: e.target.value,
+                }));
+              }}
             />
             <Button
               type="button"
@@ -293,7 +316,13 @@ function ChangeSiteSettingsOnThisDevice() {
               className="px-3 py-2"
               name="ai_Model"
               type="text"
-              defaultValue={preSetDetails.aiModel}
+              value={preSetDetails.aiModel}
+              onChange={(e) => {
+                setPreSetDetails((prev) => ({
+                  ...prev,
+                  aiModel: e.target.value,
+                }));
+              }}
             />
           </div>
         </div>
