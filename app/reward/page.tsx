@@ -56,7 +56,9 @@ export default function Page() {
     <div className="pt-2">
       <div className="p-2">
         <h1 className="text-xl font-semibold">獎懲</h1>
-        <p className="text-sm text-muted-foreground">功能尚未完成。</p>
+        <p className="text-sm text-muted-foreground">
+          功能尚未完成。(學校尚未正式啟用前沒辦法看到 Schema :\)
+        </p>
       </div>{" "}
       <div className="h-full justify-center p-2">
         <Table
@@ -74,6 +76,7 @@ export default function Page() {
                     <Button
                       type="button"
                       variant="destructive"
+                      size="sm"
                       onClick={() => {
                         setIsDeleting((prev) => [
                           ...prev,

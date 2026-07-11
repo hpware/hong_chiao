@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTRPC } from "@/trpc/client";
 import { useMutation } from "@tanstack/react-query";
-import { Eye, EyeClosed, RectangleEllipsisIcon, Scale } from "lucide-react";
+import {
+  Eye,
+  EyeClosed,
+  KeyRoundIcon,
+  LinkIcon,
+  RectangleEllipsisIcon,
+  Scale,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,20 +19,32 @@ import { toast } from "sonner";
 export default function Client() {
   const trpc = useTRPC();
   const router = useRouter();
+  const pageComponents = [
+    {
+      section: "local_settings",
+      component: <ChangeSiteSettingsOnThisDevice />,
+    },
+    {
+      section: "password",
+      component: <ResetPassword trpc={trpc} router={router} />,
+    },
+    {
+      section: "details",
+      component: <ChangeUserInfo />,
+    },
+  ];
   return (
     <div className="pt-2">
       <div className="p-2">
         <h1 className="text-xl font-semibold">設定</h1>
         <h2 className="text-sm text-muted-foreground">設定與更改使用者資訊</h2>
       </div>
-      <div className="pt-4 pl-2 mr-3">
-        <section id="password" />
-        <ResetPassword trpc={trpc} router={router} />
-      </div>
-      <div className="pt-4 pl-2 mr-3">
-        <section id="details" />
-        <ChangeUserInfo />
-      </div>
+      {pageComponents.map(({ section, component }) => (
+        <div key={section} className="pt-4 pl-2 mr-3">
+          <section id={section} />
+          {component}
+        </div>
+      ))}
     </div>
   );
 }
@@ -104,6 +123,8 @@ function ResetPassword({
             />
             <Button
               type="button"
+              variant="outline"
+              size="icon"
               onClick={() => {
                 setDisplayPassword((prev) => ({
                   ...prev,
@@ -124,11 +145,13 @@ function ResetPassword({
           <div className="flex flex-row space-x-1">
             <Input
               className="px-3 py-2"
-              type={displayPassword.confirm ? "text" : "password"}
+              type={displayPassword.new ? "text" : "password"}
               name="confirmPassword"
             />
             <Button
               type="button"
+              variant="outline"
+              size="icon"
               onClick={() => {
                 setDisplayPassword((prev) => ({
                   ...prev,
@@ -165,6 +188,133 @@ function ChangeUserInfo() {
           });
         }}
       >
+        <div className="flex justify-end text-sm text-muted-foreground">
+          <Button type="submit">送出</Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ChangeSiteSettingsOnThisDevice() {
+  const [displaySecureDetails, setDisplaySecureDetails] = useState({
+    token: false,
+  });
+  const [preSetDetails, setPreSetDetails] = useState({
+    apiUrl: localStorage.getItem("ai_apiUrl") ?? "",
+    apiToken: localStorage.getItem("ai_apiToken") ?? "",
+    aiModel: localStorage.getItem("ai_model") ?? "",
+    aiBypassCors: localStorage.getItem("ai_bypassCors") ?? "",
+  });
+  return (
+    <div className="border rounded p-2">
+      <h3 className="text-md">更改網站設定</h3>
+      <form
+        className="flex flex-col space-y-2 mt-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          toast.promise(
+            async () => {
+              const formData = new FormData(e.target as HTMLFormElement);
+              const apiUrl = formData.get("ai_ApiUrl")?.toString() as string;
+              const apiToken = formData
+                .get("ai_ApiToken")
+                ?.toString() as string;
+              const aiModel = formData.get("ai_Model")?.toString() as string;
+              const aiBypassCors = formData
+                .get("ai_BypassCors")
+                ?.toString() as string;
+              if (!apiUrl || !apiToken || !aiModel)
+                throw new Error("API URL, API Token 和 Model 都必須填寫");
+              if (!apiUrl.startsWith("https://"))
+                throw new Error("API URL 一定要是 https:// 開頭");
+              // save
+              localStorage.setItem("ai_apiUrl", apiUrl);
+              localStorage.setItem("ai_apiToken", apiToken);
+              localStorage.setItem("ai_model", aiModel);
+              setPreSetDetails({ apiUrl, apiToken, aiModel, aiBypassCors });
+            },
+            {
+              success: "設定已保存",
+              error: (err) => `錯誤: ${err.message}`,
+            },
+          );
+        }}
+      >
+        <div>
+          <label className="text-sm flex flex-row space-x-1 items-center">
+            <LinkIcon className="p-1" />
+            <span>AI API 網址 (OpenAI 格式):</span>
+          </label>
+          <div className="flex flex-row space-x-1">
+            <Input
+              className="px-3 py-2"
+              name="ai_ApiUrl"
+              type="text"
+              defaultValue={preSetDetails.apiUrl}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-sm flex flex-row space-x-1 items-center">
+            <KeyRoundIcon className="p-1" />
+            <span>AI API 金鑰:</span>
+          </label>
+          <div className="flex flex-row space-x-1">
+            <Input
+              className="px-3 py-2"
+              name="ai_ApiToken"
+              type={displaySecureDetails.token ? "text" : "password"}
+              defaultValue={preSetDetails.apiToken}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setDisplaySecureDetails((prev) => ({
+                  ...prev,
+                  token: !prev.token,
+                }));
+              }}
+              tabIndex={-1}
+            >
+              {displaySecureDetails.token ? <Eye /> : <EyeClosed />}
+            </Button>{" "}
+          </div>
+        </div>
+        <div>
+          <label className="text-sm flex flex-row space-x-1 items-center">
+            <LinkIcon className="p-1" />
+            <span>AI 模型:</span>
+          </label>
+          <div className="flex flex-row space-x-1">
+            <Input
+              className="px-3 py-2"
+              name="ai_Model"
+              type="text"
+              defaultValue={preSetDetails.aiModel}
+            />
+          </div>
+        </div>
+        <div className="flex flex-row space-x-1 items-center">
+          <label className="text-sm flex flex-row space-x-1 items-center">
+            <LinkIcon className="p-1" />
+            <span>AI 要求透過伺服器傳送 (建議勾選，避免AI公司阻擋要求):</span>
+          </label>
+          <input
+            className="px-3 py-2"
+            name="ai_BypassCors"
+            type="checkbox"
+            checked={preSetDetails.aiBypassCors === "true"}
+            onChange={(e) => {
+              setPreSetDetails((prev) => ({
+                ...prev,
+                aiBypassCors: e.target.checked ? "true" : "false",
+              }));
+            }}
+          />
+        </div>
         <div className="flex justify-end text-sm text-muted-foreground">
           <Button type="submit">送出</Button>
         </div>

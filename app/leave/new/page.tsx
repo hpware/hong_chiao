@@ -287,9 +287,7 @@ export default function Page() {
               >
                 上傳附件
               </Button> */}
-              <Button type="submit" className="hover:cursor-pointer">
-                送出
-              </Button>
+              <Button type="submit">送出</Button>
             </div>
           </form>
         </div>

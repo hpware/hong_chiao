@@ -14,6 +14,7 @@ import {
   NativeSelectOptGroup,
   NativeSelectOption,
 } from "@/components/ui/native-select";
+import { useTRPC } from "@/trpc/client";
 
 type LeaveRow = {
   Objid?: number | string;
@@ -29,6 +30,7 @@ type LeaveResponse = {
 };
 
 export default function Page() {
+  const trpc = useTRPC();
   const [requestType, setRequestType] = useState<{
     year: number;
     sem: number;
@@ -47,62 +49,48 @@ export default function Page() {
   const {
     data: checkIfFeatureIsEnabled,
     isLoading: checkIfFeatureIsEnabledLoading,
-  } = useQuery<{
-    enabled: boolean;
-  }>({
-    queryKey: ["checkFeatureEnabled"],
-    queryFn: async () => {
-      const response = await fetch(
-        "/api/home/features?year=114&semi=1&feature=discount", // static numbers as this does not require the year and semster to be set.
-      );
-      if (!response.ok) {
-        throw new Error("Failed to check feature status");
-      }
-      return {
-        enabled: (await response.json())[0].enabled,
-      };
-    },
-  });
+  } = useQuery(
+    trpc.home.features.queryOptions({
+      year: 114,
+      semi: 1,
+      feature: "discount",
+    }),
+  );
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["discountData"],
-    queryFn: async () => {
-      const response = await fetch(`/api/discount`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch leave data");
-      }
-      return response.json();
-    },
-  });
-  //if (checkIfFeatureIsEnabledLoading) {
-  //  return (
-  //    <div className="pt-2">
-  //      <div className="p-2">
-  //        <h1 className="text-xl font-semibold">申請 抵免</h1>
-  //        <p className="text-sm text-muted-foreground animate-pulse">
-  //          檢查功能是否啟用中...
-  //        </p>{" "}
-  //      </div>{" "}
-  //      <form className="flex items-center space-x-4 p-2"></form>
-  //      <div className="h-full justify-center p-2"></div>
-  //    </div>
-  //  );
-  //}
-  //if (!checkIfFeatureIsEnabled?.enabled) {
-  //  return (
-  //    <div className="pt-2">
-  //      <div className="p-2">
-  //        <h1 className="text-xl font-semibold">申請 抵免</h1>
-  //        <p className="text-sm text-muted-foreground animate-pulse">
-  //          檢查功能是否啟用中...
-  //        </p>{" "}
-  //      </div>{" "}
-  //      <form className="flex items-center space-x-4 p-2"></form>
-  //      <div className="h-full justify-center p-2"></div>
-  //    </div>
-  //  );
-  //}
+  const { data, isLoading } = useQuery(
+    trpc.tuition.discount.get.queryOptions(),
+  );
+  const discountEnabled =
+    checkIfFeatureIsEnabled?.data.find((feature) => feature.name === "discount")
+      ?.disabled === false;
+  if (checkIfFeatureIsEnabledLoading) {
+    return (
+      <div className="pt-2">
+        <div className="p-2">
+          <h1 className="text-xl font-semibold">申請 抵免</h1>
+          <p className="text-sm text-muted-foreground animate-pulse">
+            檢查功能是否啟用中...
+          </p>{" "}
+        </div>{" "}
+        <form className="flex items-center space-x-4 p-2"></form>
+        <div className="h-full justify-center p-2"></div>
+      </div>
+    );
+  }
+  if (!discountEnabled) {
+    return (
+      <div className="pt-2">
+        <div className="p-2">
+          <h1 className="text-xl font-semibold">申請 抵免</h1>
+          <p className="text-sm text-muted-foreground animate-pulse">
+            檢查功能是否啟用中...
+          </p>{" "}
+        </div>{" "}
+        <form className="flex items-center space-x-4 p-2"></form>
+        <div className="h-full justify-center p-2"></div>
+      </div>
+    );
+  }
 
   const formInputItems = [
     {

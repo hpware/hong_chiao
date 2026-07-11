@@ -72,7 +72,7 @@ export default function Page() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      <Button className="px-2 py-0 m-0">
+                      <Button size="sm" variant="outline">
                         學校資訊
                         <ExternalLink className="size-3.5" />
                       </Button>
@@ -84,7 +84,7 @@ export default function Page() {
                     href="/credit-application/apply/[id]"
                     as={`/credit-application/apply/${row.original.Code}`}
                   >
-                    <Button className="px-2 py-0 m-0">申請</Button>
+                    <Button size="sm">申請</Button>
                   </Link>
                 </div>
               ),

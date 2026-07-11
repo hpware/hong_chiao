@@ -229,7 +229,8 @@ function toROCDate(input: string | number | Date) {
   const month = get("month");
   const day = get("day");
 
-  if (!year || !month || !day) throwBadRequest("Date parsing error, please try again.");
+  if (!year || !month || !day)
+    throwBadRequest("Date parsing error, please try again.");
   return `${year}/${month}/${day}`;
 }
 
@@ -351,15 +352,20 @@ export const appRouter = createTRPCRouter({
             : featureList;
         const featureDoesNotExist =
           featureSelection?.filter(
-            (item) => !featureList.some((featureItem) => featureItem.name === item),
+            (item) =>
+              !featureList.some((featureItem) => featureItem.name === item),
           ) ?? [];
-        const requiresBrowser = findFeatures.some((item) => item.requireBrowser);
+        const requiresBrowser = findFeatures.some(
+          (item) => item.requireBrowser,
+        );
         const dataArray = requiresBrowser
           ? await withBrowser(browserCookies, async (context) =>
               Promise.all(
                 findFeatures.map(async (item) => {
-                  if (!item.isEnabled) return { name: item.name, disabled: true };
-                  if (!item.requireBrowser) return { name: item.name, disabled: false };
+                  if (!item.isEnabled)
+                    return { name: item.name, disabled: true };
+                  if (!item.requireBrowser)
+                    return { name: item.name, disabled: false };
                   return {
                     name: item.name,
                     disabled: await item.requestComponent(context),
@@ -530,7 +536,11 @@ export const appRouter = createTRPCRouter({
         return {
           success: apiResponse.IsOK,
           typesOfLeave: apiResponse.LeaveStdS.map(
-            (data: { ALCode: string; ALTitle: string; WarningDay: string }) => ({
+            (data: {
+              ALCode: string;
+              ALTitle: string;
+              WarningDay: string;
+            }) => ({
               id: data.ALCode,
               name: data.ALTitle,
               warnindDay: data.WarningDay,
@@ -579,12 +589,15 @@ export const appRouter = createTRPCRouter({
       };
     }),
     convertDateToSemiYear: baseProcedure
-      .input(z.object({ year: z.number().optional(), month: z.number().optional() }))
+      .input(
+        z.object({ year: z.number().optional(), month: z.number().optional() }),
+      )
       .query((opts) => {
         const year = opts.input.year || new Date().getFullYear();
         const month = opts.input.month || new Date().getMonth() + 1;
 
-        if (!(year > 1911 && year < 4000)) throwBadRequest("Invalid year input.");
+        if (!(year > 1911 && year < 4000))
+          throwBadRequest("Invalid year input.");
         if (!(month > 0 && month < 13)) {
           throwBadRequest("阿一年只有 12 個月內 怎麼會多或少???");
         }
@@ -644,6 +657,58 @@ export const appRouter = createTRPCRouter({
         if (data.failedLogin) throwUnauthorized();
         return data;
       }),
+    discount: createTRPCRouter({
+      get: baseProcedure.query(async () => {
+        const apiUrl = requireApiUrl();
+        const { browserCookies } = await requireBrowserCookies(apiUrl);
+        const { basicHelpInfoData, data } = await GetDiscount(browserCookies);
+
+        if (!(basicHelpInfoData.IsOK && data.IsOK)) {
+          throwUnauthorized(data.MSG || expiredSessionMessage);
+        }
+        const r = data.rmodel;
+        const mapFamily = (f: any) => ({
+          relation: f?.Relation ?? "",
+          alive: f?.Alive ?? "",
+          name: f?.Name ?? "",
+          idNo: f?.IdNo ?? "",
+          job: f?.Job ?? "",
+          militaryRank: f?.MilitaryRank ?? "",
+        });
+
+        return {
+          success: data.OK,
+          errMsg: data.MSG,
+          data: {
+            note: basicHelpInfoData.Help,
+            objId: r.objid,
+            applyId: r.ApplyID,
+            status: r.Status,
+            semiYear: r.SemiYear,
+            semester: r.Semistry,
+            stage: r.Stage,
+            studentId: r.StuId,
+            studentName: r.StuName,
+            orgName: r.OrgName,
+            dayNight: r.DayNight,
+            newsStr: r.NewsStr,
+            isApply: r.IsApply,
+            needCertified: r.NeedCertified,
+            phoneNumber: r.PhoneNumber,
+            mobileNumber: r.MobileNumber,
+            email: r.Email,
+            identity: r.Iden,
+            originalClan: r.OrigClan,
+            isBoarder: r.IsBoarders,
+            idNo: r.idno,
+            father: mapFamily(r.ReduceFamilyF),
+            mother: mapFamily(r.ReduceFamilyM),
+            guardian: mapFamily(r.ReduceFamilyG),
+            spouse: mapFamily(r.ReduceFamilyS),
+          },
+        };
+      }),
+    }),
   }),
   bill: createTRPCRouter({
     get: baseProcedure
@@ -669,58 +734,6 @@ export const appRouter = createTRPCRouter({
         if (data.failedLogin) throwUnauthorized();
         return data;
       }),
-  }),
-  discount: createTRPCRouter({
-    get: baseProcedure.query(async () => {
-      const apiUrl = requireApiUrl();
-      const { browserCookies } = await requireBrowserCookies(apiUrl);
-      const { basicHelpInfoData, data } = await GetDiscount(browserCookies);
-
-      if (!(basicHelpInfoData.IsOK && data.IsOK)) {
-        throwUnauthorized(data.MSG || expiredSessionMessage);
-      }
-      const r = data.rmodel;
-      const mapFamily = (f: any) => ({
-        relation: f?.Relation ?? "",
-        alive: f?.Alive ?? "",
-        name: f?.Name ?? "",
-        idNo: f?.IdNo ?? "",
-        job: f?.Job ?? "",
-        militaryRank: f?.MilitaryRank ?? "",
-      });
-
-      return {
-        success: data.OK,
-        errMsg: data.MSG,
-        data: {
-          note: basicHelpInfoData.Help,
-          objId: r.objid,
-          applyId: r.ApplyID,
-          status: r.Status,
-          semiYear: r.SemiYear,
-          semester: r.Semistry,
-          stage: r.Stage,
-          studentId: r.StuId,
-          studentName: r.StuName,
-          orgName: r.OrgName,
-          dayNight: r.DayNight,
-          newsStr: r.NewsStr,
-          isApply: r.IsApply,
-          needCertified: r.NeedCertified,
-          phoneNumber: r.PhoneNumber,
-          mobileNumber: r.MobileNumber,
-          email: r.Email,
-          identity: r.Iden,
-          originalClan: r.OrigClan,
-          isBoarder: r.IsBoarders,
-          idNo: r.idno,
-          father: mapFamily(r.ReduceFamilyF),
-          mother: mapFamily(r.ReduceFamilyM),
-          guardian: mapFamily(r.ReduceFamilyG),
-          spouse: mapFamily(r.ReduceFamilyS),
-        },
-      };
-    }),
   }),
   reward: createTRPCRouter({
     get: baseProcedure
@@ -878,7 +891,10 @@ export const appRouter = createTRPCRouter({
           buildURLParams.append("ppqmodel[objid]", "");
           buildURLParams.append("ppqmodel[RMID]", opts.input.id);
           buildURLParams.append("ppqmodel[RMDtlID]", "");
-          buildURLParams.append("ppqmodel[Descript]", opts.input.descript || "");
+          buildURLParams.append(
+            "ppqmodel[Descript]",
+            opts.input.descript || "",
+          );
           opts.input.appendFiles.forEach((item, index) => {
             buildURLParams.append(
               `ppqmodel[AppendidxS][${index}][InId]`,
@@ -1205,6 +1221,18 @@ export const appRouter = createTRPCRouter({
         // nukr -:
       }),
   }),
+  chat: baseProcedure
+    .input(
+      z.object({
+        api: z.object({
+          url: z.string(),
+          key: z.string(),
+          model: z.string(),
+        }),
+        
+      }),
+    )
+    .mutation(async (opts) => {}),
 });
 // export type definition of API
 export type AppRouter = typeof appRouter;

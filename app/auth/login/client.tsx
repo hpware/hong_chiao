@@ -185,6 +185,8 @@ export default function Client() {
                 />
                 <Button
                   type="button"
+                  variant="outline"
+                  size="icon"
                   onClick={() => {
                     setDisplayPassword(!displayPassword);
                   }}

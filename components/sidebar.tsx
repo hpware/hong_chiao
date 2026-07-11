@@ -20,6 +20,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Award,
+  BinocularsIcon,
+  BotMessageSquareIcon,
   ClipboardList,
   DiamondPercentIcon,
   HandCoins,
@@ -39,12 +41,22 @@ import { toast } from "sonner";
 
 const navItems = [
   {
+    title: "AI",
+    items: [
+      {
+        title: "機器人",
+        href: "/chat",
+        icon: BotMessageSquareIcon,
+      },
+    ],
+  },
+  {
     title: "假單",
     items: [
       {
-        title: "舊假單",
+        title: "查詢假單",
         href: "/leave",
-        icon: ClipboardList,
+        icon: BinocularsIcon,
       },
       {
         title: "申請",
@@ -64,11 +76,16 @@ const navItems = [
     ],
   },
   {
-    title: "就學抵免",
+    title: "學費",
     items: [
       {
+        title: "查詢學費資訊",
+        href: "/tuition",
+        icon: BinocularsIcon,
+      },
+      {
         title: "抵免申請",
-        href: "/discount",
+        href: "/tuition/discount",
         icon: DiamondPercentIcon,
       },
     ],

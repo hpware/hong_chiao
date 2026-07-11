@@ -128,21 +128,22 @@ export default function Page() {
                 return (
                   <div className="flex justify-end space-x-1">
                     <Link href={`/leave/request/${row.original.Objid}`}>
-                      <Button type="button">
+                      <Button type="button" variant="outline" size="icon-sm">
                         <InfoIcon />
                       </Button>
                     </Link>
                     <Link href={`/leave/request/${row.original.Objid}/edit`}>
-                      <Button type="button">
+                      <Button type="button" variant="outline" size="icon-sm">
                         <PencilIcon />
                       </Button>
                     </Link>
-                    <Button type="button" onClick={(e) => {}}>
+                    <Button type="button" size="sm" onClick={(e) => {}}>
                       {confirming.submit ? "確定傳送?" : <SendIcon />}
                     </Button>
                     <Button
                       type="button"
                       variant="destructive"
+                      size="sm"
                       onClick={handleClick}
                     >
                       {confirming.delete ? "確定?" : <Trash2Icon />}
