@@ -1,7 +1,7 @@
 "use client"
 
 import type { ScaleLinear } from "d3-scale"
-import { createContext, use, useState } from "react"
+import { createContext, use, useCallback, useState } from "react"
 import type { CommonChart } from "./common-context"
 import type { BloomInput } from "./dither-paint"
 import type { DitherColor, Seed } from "./palette"
@@ -222,7 +222,7 @@ export function useChartController({
   const [isMouseInChart, setMouseInChart] = useState(false)
   const [seriesSpecs, setSeriesSpecs] = useState<Record<string, SeriesSpec>>({})
 
-  const registerSeries = (spec: SeriesSpec) => {
+  const registerSeries = useCallback((spec: SeriesSpec) => {
     setSeriesSpecs((prev) => {
       const cur = prev[spec.dataKey]
       return cur &&
@@ -232,15 +232,15 @@ export function useChartController({
         ? prev
         : { ...prev, [spec.dataKey]: spec }
     })
-  }
-  const unregisterSeries = (dataKey: string) => {
+  }, [])
+  const unregisterSeries = useCallback((dataKey: string) => {
     setSeriesSpecs((prev) => {
       if (!(dataKey in prev)) return prev
       const next = { ...prev }
       delete next[dataKey]
       return next
     })
-  }
+  }, [])
 
   const selectDataKey = (key: string | null) => {
     setSelectedDataKey(key)

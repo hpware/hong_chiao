@@ -4,6 +4,11 @@ import { useEffect, useMemo } from "react";
 import { useTRPC } from "@/trpc/client";
 import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
+import { BarChart } from "@/components/dither-kit/bar-chart";
+import { Area } from "@/components/dither-kit/area";
+import { XAxis } from "@/components/dither-kit/x-axis";
+import { YAxis } from "@/components/dither-kit/y-axis";
+import { Tooltip } from "@/components/dither-kit/tooltip";
 import {
   ArrowRightToLine,
   DiamondPercentIcon,
@@ -12,6 +17,7 @@ import {
 } from "lucide-react";
 import Table from "@/components/table";
 import DOMPurify from "dompurify";
+import { Bar } from "@/components/dither-kit";
 
 type LeaveResponse = {
   success: boolean;
@@ -106,6 +112,12 @@ export default function Client() {
     },
   ];
 
+  const leaveChart = useMemo(
+    () =>
+      queryData?.data.leaves.map((l) => ({ type: l.type, days: l.data })) ?? [],
+    [queryData],
+  );
+
   return (
     <div>
       <div className="pt-7 pl-7">
@@ -159,6 +171,21 @@ export default function Client() {
           );
         })}
       </div>
+      {leaveChart.length > 0 && (
+        <div className="mx-7 mt-5 h-[180px]">
+          <BarChart
+            data={leaveChart}
+            config={{ days: { label: "天數", color: "blue" } }}
+            bloom="low"
+          >
+            <XAxis dataKey="type" />
+            <YAxis />
+            <Tooltip labelKey="type" />
+            <Bar dataKey="desktop" variant="gradient" />
+            <Bar dataKey="mobile" variant="hatched" />{" "}
+          </BarChart>
+        </div>
+      )}
       <div className="mt-5 mx-7">
         <h1 className="text-1xl">公布欄</h1>
         <Table
