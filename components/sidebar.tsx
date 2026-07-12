@@ -12,6 +12,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
@@ -41,7 +42,7 @@ import { toast } from "sonner";
 
 const navItems = [
   {
-    title: "假單",
+    title: "請假",
     items: [
       {
         title: "查詢假單",
@@ -173,38 +174,43 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
       </SidebarHeader>
 
       <SidebarContent>
-        {navItems.map((cat) => {
+        {navItems.map((cat, i) => {
           return (
-            <SidebarGroup key={cat.title}>
-              <SidebarGroupLabel>{cat.title}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {cat.items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = pathname === item.href;
+            <div key={cat.title}>
+              {i > 0 && (
+                <hr className="hidden group-data-[collapsible=icon]:block" />
+              )}
+              <SidebarGroup>
+                <SidebarGroupLabel>{cat.title}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {cat.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = pathname === item.href;
 
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          tooltip={item.title}
-                          isActive={isActive}
-                          className="transition-all duration-100"
-                        >
-                          <Link
-                            href={item.href}
-                            onClick={() => setOpenMobile(false)}
+                      return (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton
+                            asChild
+                            tooltip={item.title}
+                            isActive={isActive}
+                            className="transition-all duration-100"
                           >
-                            <Icon />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+                            <Link
+                              href={item.href}
+                              onClick={() => setOpenMobile(false)}
+                            >
+                              <Icon />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </div>
           );
         })}
       </SidebarContent>

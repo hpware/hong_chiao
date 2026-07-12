@@ -155,7 +155,7 @@ export function CartesianRoot<TData extends Row>({
             <svg
               width={size.width}
               height={size.height}
-              className="absolute inset-0 overflow-visible"
+              className="absolute inset-0 overflow-visible pointer-events-none select-none"
               aria-hidden
               role="presentation"
             >
@@ -169,7 +169,7 @@ export function CartesianRoot<TData extends Row>({
             <svg
               width={size.width}
               height={size.height}
-              className="absolute inset-0 overflow-visible"
+              className="absolute inset-0 overflow-visible pointer-events-none select-none"
               role="img"
               aria-label="Chart"
             >

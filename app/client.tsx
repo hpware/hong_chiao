@@ -152,11 +152,7 @@ export default function Client() {
       </div>
       <div className="grid gap-3 px-7 sm:grid-cols-2 lg:grid-cols-3 pt-5 mt-0">
         {cards.map((card) => {
-          if (!(
-            card.label === "缺曠紀錄" ||
-            card.label === "曠課" ||
-            card.label === "操行分數"
-          ))
+          if (!(card.label === "缺曠紀錄" || card.label === "操行分數"))
             return null;
           return (
             <div
@@ -174,15 +170,14 @@ export default function Client() {
       {leaveChart.length > 0 && (
         <div className="mx-7 mt-5 h-[180px]">
           <BarChart
-            data={leaveChart}
+            data={leaveChart.filter((item) => item.type !== "操行分數")}
             config={{ days: { label: "天數", color: "blue" } }}
             bloom="low"
           >
             <XAxis dataKey="type" />
             <YAxis />
             <Tooltip labelKey="type" />
-            <Bar dataKey="desktop" variant="gradient" />
-            <Bar dataKey="mobile" variant="hatched" />{" "}
+            <Bar dataKey="data" variant="gradient" />
           </BarChart>
         </div>
       )}
