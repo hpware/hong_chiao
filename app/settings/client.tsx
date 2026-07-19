@@ -227,26 +227,26 @@ function ChangeSiteSettingsOnThisDevice() {
           e.preventDefault();
           toast.promise(
             async () => {
-              const formData = new FormData(e.currentTarget);
-              const apiUrl = formData.get("ai_ApiUrl")?.toString() as string;
-              const apiToken = formData
-                .get("ai_ApiToken")
-                ?.toString() as string;
-              const aiModel = formData.get("ai_Model")?.toString() as string;
-              const aiBypassCors = formData.has("ai_BypassCors")
-                ? "true"
-                : "false";
-              const aiDisabled = formData.has("aiDisabled") ? "true" : "false";
+              // 停用時輸入框會被 disabled、不會進到 FormData，
+              // 所以改從受控的 state 讀值，停用時才不會把已存的設定清空
+              const apiUrl = preSetDetails.apiUrl.trim();
+              const apiToken = preSetDetails.apiToken.trim();
+              const aiModel = preSetDetails.aiModel.trim();
+              const aiBypassCors =
+                preSetDetails.aiBypassCors === "true" ? "true" : "false";
+              const aiDisabled =
+                preSetDetails.aiDisabled === "true" ? "true" : "false";
               if (aiDisabled !== "true" && (!apiUrl || !apiToken || !aiModel))
                 throw new Error("API URL, API Token 和 Model 都必須填寫");
               if (aiDisabled !== "true" && !apiUrl.startsWith("https://"))
                 throw new Error("API URL 一定要是 https:// 開頭");
               // save
-              localStorage.setItem("ai_apiUrl", apiUrl ?? "");
-              localStorage.setItem("ai_apiToken", apiToken ?? "");
-              localStorage.setItem("ai_model", aiModel ?? "");
-              localStorage.setItem("ai_bypassCors", aiBypassCors ?? "");
+              localStorage.setItem("ai_apiUrl", apiUrl);
+              localStorage.setItem("ai_apiToken", apiToken);
+              localStorage.setItem("ai_model", aiModel);
+              localStorage.setItem("ai_bypassCors", aiBypassCors);
               localStorage.setItem("ai_disabled", aiDisabled);
+              window.dispatchEvent(new Event("ai-settings-changed"));
               setPreSetDetails({
                 apiUrl,
                 apiToken,
@@ -272,7 +272,6 @@ function ChangeSiteSettingsOnThisDevice() {
             name="aiDisabled"
             type="checkbox"
             checked={preSetDetails.aiDisabled === "true"}
-            defaultChecked={preSetDetails.aiDisabled === "true"}
             onChange={(e) => {
               setPreSetDetails((prev) => ({
                 ...prev,

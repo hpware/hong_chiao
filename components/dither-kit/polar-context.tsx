@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, use, useState } from "react"
+import { createContext, use, useCallback, useState } from "react"
 import {
   type AreaVariant,
   type ChartConfig,
@@ -121,8 +121,6 @@ export function usePolarController({
   defaultSelectedDataKey?: string | null
   onSelectionChange?: (key: string | null) => void
 }): PolarChartContextValue {
-  // React Compiler memoizes every render-scope value below — no manual
-  // useMemo/useCallback wrappers needed.
   const configKeys = Object.keys(config)
   const revision = useRevision(data, replayToken)
 
@@ -140,19 +138,19 @@ export function usePolarController({
   }
   const [variants, setVariants] = useState<Record<string, AreaVariant>>({})
 
-  const registerVariant = (key: string, variant: AreaVariant) => {
+  const registerVariant = useCallback((key: string, variant: AreaVariant) => {
     setVariants((prev) =>
       prev[key] === variant ? prev : { ...prev, [key]: variant }
     )
-  }
-  const unregisterVariant = (key: string) => {
+  }, [])
+  const unregisterVariant = useCallback((key: string) => {
     setVariants((prev) => {
       if (!(key in prev)) return prev
       const next = { ...prev }
       delete next[key]
       return next
     })
-  }
+  }, [])
 
   const selectDataKey = (key: string | null) => {
     setSelectedDataKey(key)

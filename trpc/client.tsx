@@ -2,14 +2,41 @@
 // ^-- to make sure we can mount the Provider from a server component
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { createTRPCClient, httpBatchLink } from "@trpc/client";
+import {
+  createTRPCClient,
+  httpBatchStreamLink,
+  httpBatchLink,
+  splitLink,
+} from "@trpc/client";
 import { createTRPCContext } from "@trpc/tanstack-react-query";
 import { useState } from "react";
 import superjson from "superjson";
 import { makeQueryClient } from "./query-client";
 import type { AppRouter } from "./routers/_app";
-export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
+import type { AnyTRPCProcedure } from "@trpc/server";
+export const { TRPCProvider, useTRPC, useTRPCClient } =
+  createTRPCContext<AppRouter>();
 let browserQueryClient: QueryClient;
+
+type ProcedurePaths<T, Prefix extends string = ""> = {
+  [K in keyof T & string]: T[K] extends AnyTRPCProcedure
+    ? `${Prefix}${K}`
+    : T[K] extends object
+      ? ProcedurePaths<T[K], `${Prefix}${K}.`>
+      : never;
+}[keyof T & string];
+
+type AppProcedurePath = ProcedurePaths<AppRouter["_def"]["record"]>;
+
+// whitelist batch requests
+const useBatch: ReadonlySet<string> = new Set([
+  "user.login",
+  "user.logout",
+  "user.renewTimer",
+  "user.changePassword",
+  "user.getCaptcha",
+] as const satisfies readonly AppProcedurePath[]);
+
 function getQueryClient() {
   if (typeof window === "undefined") {
     // Server: always make a new query client
@@ -43,9 +70,16 @@ export function TRPCReactProvider(
   const [trpcClient] = useState(() =>
     createTRPCClient<AppRouter>({
       links: [
-        httpBatchLink({
-          transformer: superjson,
-          url: getUrl(),
+        splitLink({
+          condition: (op) => useBatch.has(op.path),
+          true: httpBatchLink({
+            transformer: superjson,
+            url: getUrl(),
+          }),
+          false: httpBatchStreamLink({
+            transformer: superjson,
+            url: getUrl(),
+          }),
         }),
       ],
     }),

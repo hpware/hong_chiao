@@ -21,6 +21,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Award,
+  BadgePlus,
   BinocularsIcon,
   BotMessageSquareIcon,
   ClipboardList,
@@ -78,6 +79,16 @@ const navItems = [
         title: "抵免申請",
         href: "/tuition/discount",
         icon: DiamondPercentIcon,
+      },
+    ],
+  },
+  {
+    title: "不利處境助學",
+    items: [
+      {
+        title: "申請",
+        href: "/",
+        icon: BadgePlus,
       },
     ],
   },
@@ -141,6 +152,7 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
   useEffect(() => {
     if (renewQuery.error?.data?.code === "UNAUTHORIZED") {
       toast.error("Session 過期 請重新登入");
+
       router.push("/api/auth/logout?prefill=true");
     }
   }, [renewQuery.error, router]);

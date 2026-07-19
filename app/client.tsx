@@ -177,7 +177,7 @@ export default function Client() {
             <XAxis dataKey="type" />
             <YAxis />
             <Tooltip labelKey="type" />
-            <Bar dataKey="data" variant="gradient" />
+            <Bar dataKey="days" variant="gradient" />
           </BarChart>
         </div>
       )}

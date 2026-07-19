@@ -1,4 +1,5 @@
 import { z } from "zod";
+import OpenAI from "openai";
 import { cookies } from "next/headers";
 import { TRPCError } from "@trpc/server";
 import { chromium, type Browser, type BrowserContext } from "playwright";
@@ -654,7 +655,8 @@ export const appRouter = createTRPCRouter({
           String(opts.input.semistry),
         );
 
-        if (data.failedLogin) throwUnauthorized();
+        if (!data.success && data.message === null) throwUnauthorized();
+
         return data;
       }),
     discount: createTRPCRouter({
@@ -941,52 +943,57 @@ export const appRouter = createTRPCRouter({
   }),
   // auth/user
   user: createTRPCRouter({
-    getCaptcha: baseProcedure.query(async (opts) => {
-      const rawUrl = process.env.API_URL;
+    getCaptcha: baseProcedure
+      .meta({
+        useBatchLink: true,
+      })
+      .query(async (opts) => {
+        const rawUrl = process.env.API_URL;
 
-      if (!rawUrl) {
-        return {
-          success: false,
-          image: "/_appassets/captcha_errors/cannotObtain.png",
-          error:
-            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
-        };
-      }
-      const apiUrl = rawUrl;
-      const url = new URL(apiUrl);
-      const cookieStore = await cookies();
-      const browserCookies = await getBrowserCookieByName(
-        cookieStore,
-        new URL(rawUrl),
-        ["ASP.NET_SessionId"],
-      );
-      const startTime = Date.now();
-      const image = await GetCaptchaImage(browserCookies);
-      try {
-        for (const cookie of image.setCookies) {
-          cookieStore.set(cookie.name, cookie.value, {
-            httpOnly: cookie.httpOnly,
-            secure: url.protocol === "https:",
-            sameSite:
-              cookie.sameSite === "None"
-                ? "none"
-                : cookie.sameSite === "Strict"
-                  ? "strict"
-                  : "lax",
-            path: "/",
-            expires:
-              cookie.expires && cookie.expires > 0
-                ? new Date(cookie.expires * 1000)
-                : undefined,
-          });
+        if (!rawUrl) {
+          return {
+            success: false,
+            image: "/_appassets/captcha_errors/cannotObtain.png",
+            error:
+              "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+          };
         }
-      } catch {}
-      return {
-        success: image.success,
-        image: image.image,
-        duration: (Date.now() - startTime) / 1000,
-      };
-    }),
+        const apiUrl = rawUrl;
+        const url = new URL(apiUrl);
+        const cookieStore = await cookies();
+        const browserCookies = await getBrowserCookieByName(
+          cookieStore,
+          new URL(rawUrl),
+          ["ASP.NET_SessionId"],
+        );
+        const startTime = Date.now();
+        const image = await GetCaptchaImage(browserCookies);
+
+        try {
+          for (const cookie of image.setCookies) {
+            cookieStore.set(cookie.name, cookie.value, {
+              httpOnly: cookie.httpOnly,
+              secure: url.protocol === "https:",
+              sameSite:
+                cookie.sameSite === "None"
+                  ? "none"
+                  : cookie.sameSite === "Strict"
+                    ? "strict"
+                    : "lax",
+              path: "/",
+              expires:
+                cookie.expires && cookie.expires > 0
+                  ? new Date(cookie.expires * 1000)
+                  : undefined,
+            });
+          }
+        } catch {}
+        return {
+          success: image.success,
+          image: image.image,
+          duration: (Date.now() - startTime) / 1000,
+        };
+      }),
     login: baseProcedure
       .input(
         z.object({
@@ -995,6 +1002,9 @@ export const appRouter = createTRPCRouter({
           captcha: z.string(),
         }),
       )
+      .meta({
+        useBatchLink: true,
+      })
       .mutation(async (opts) => {
         const rawUrl = process.env.API_URL;
 
@@ -1020,6 +1030,7 @@ export const appRouter = createTRPCRouter({
           opts.input.captcha,
           browserCookies,
         );
+        console.log(opts.path); // "login"
         if (!login.success) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -1056,43 +1067,47 @@ export const appRouter = createTRPCRouter({
       }),
     // logout is still the same. Due to some components that require redirecting to the login page.
     // this is for some applications that use muations to submit logouts, some will migrate through, but some not, like the sidebar button one, it will prob be changed, but the auto logout on session fail thingy will still use that endpoint.
-    logout: baseProcedure.mutation(async () => {
-      const rawUrl = process.env.API_URL;
-      if (!rawUrl) {
-        throw new TRPCError({
-          code: "SERVICE_UNAVAILABLE",
-          message:
-            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
-        });
-      }
-      const apiUrl = rawUrl;
-      const url = new URL(apiUrl);
-      const cookieStore = await cookies();
-      let browserCookies;
-      try {
-        browserCookies = await getBrowserCookies(cookieStore, url);
-      } catch {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Session 過期了或無效。請重新登入。",
-        });
-      }
+    logout: baseProcedure
+      .meta({
+        useBatchLink: true,
+      })
+      .mutation(async () => {
+        const rawUrl = process.env.API_URL;
+        if (!rawUrl) {
+          throw new TRPCError({
+            code: "SERVICE_UNAVAILABLE",
+            message:
+              "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+          });
+        }
+        const apiUrl = rawUrl;
+        const url = new URL(apiUrl);
+        const cookieStore = await cookies();
+        let browserCookies;
+        try {
+          browserCookies = await getBrowserCookies(cookieStore, url);
+        } catch {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Session 過期了或無效。請重新登入。",
+          });
+        }
 
-      await LogoutRemote(browserCookies);
-      for (const cookieName of [
-        "ASP.NET_SessionId",
-        "ssClientIP",
-        "ssAID",
-        "ssSchID",
-        "ssSchName",
-        "ssLoginID",
-        "ssLoginForLDAP",
-        "ssLoginName",
-      ]) {
-        cookieStore.delete(cookieName);
-      }
-      return { success: true };
-    }),
+        await LogoutRemote(browserCookies);
+        for (const cookieName of [
+          "ASP.NET_SessionId",
+          "ssClientIP",
+          "ssAID",
+          "ssSchID",
+          "ssSchName",
+          "ssLoginID",
+          "ssLoginForLDAP",
+          "ssLoginName",
+        ]) {
+          cookieStore.delete(cookieName);
+        }
+        return { success: true };
+      }),
     renewTimer: baseProcedure.query(async () => {
       const rawUrl = process.env.API_URL;
 
@@ -1230,17 +1245,43 @@ export const appRouter = createTRPCRouter({
         // nukr -:
       }),
   }),
-  chat: baseProcedure
+  // 幫瀏覽器轉發 OpenAI 格式的聊天要求，避免被 CORS 阻擋；
+  // 用 async generator 把上游的 SSE chunk 一路串流回前端
+  openaiCompletionProxy: baseProcedure
     .input(
       z.object({
         api: z.object({
-          url: z.string(),
-          key: z.string(),
-          model: z.string(),
+          url: z.string().startsWith("https://"),
+          key: z.string().min(1),
+          model: z.string().min(1),
         }),
+        messages: z.array(z.record(z.string(), z.any())),
+        tools: z.array(z.record(z.string(), z.any())).optional(),
       }),
     )
-    .mutation(async (opts) => {}),
+    .mutation(async function* (opts) {
+      // 只有登入中的使用者能用，避免變成公開代理
+      await requireBrowserCookies(requireApiUrl());
+
+      const client = new OpenAI({
+        apiKey: opts.input.api.key,
+        baseURL: opts.input.api.url.replace(/\/+$/, ""),
+      });
+      const stream = await client.chat.completions.create(
+        {
+          model: opts.input.api.model,
+          messages: opts.input
+            .messages as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+          tools: opts.input.tools as
+            OpenAI.Chat.Completions.ChatCompletionTool[] | undefined,
+          stream: true,
+        },
+        { signal: opts.signal },
+      );
+      for await (const chunk of stream) {
+        yield chunk;
+      }
+    }),
 });
 // export type definition of API
 export type AppRouter = typeof appRouter;
