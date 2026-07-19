@@ -56,7 +56,7 @@ export default function Page() {
       { name: "抵免", value: discounts },
       { name: "待繳", value: requiredToPay },
     ].filter((item) => item.value > 0);
-  }, [details?.due, details?.paid]);
+  }, [details?.due, details?.due]);
 
   return (
     <main className="space-y-5 p-4">
@@ -110,7 +110,7 @@ export default function Page() {
           <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
             <section className="rounded-xl border bg-card p-4">
               <div className="mb-2">
-                <h2 className="font-medium">繳費進度</h2>
+                <h2 className="font-medium">金額</h2>
                 <p className="text-xs text-muted-foreground">
                   已收金額與尚待繳納金額
                 </p>

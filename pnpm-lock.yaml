@@ -47,9 +47,6 @@ importers:
       lucide-react:
         specifier: ^1.16.0
         version: 1.20.0(react@19.2.4)
-      marked-react:
-        specifier: ^4.0.0
-        version: 4.0.0(react@19.2.4)
       motion:
         specifier: ^12.42.2
         version: 12.42.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -3009,9 +3006,6 @@ packages:
     resolution: {integrity: sha512-2NFaIyNVgJmBs/ecmtGzlmluTFs5cHEWGTdu0t1HBwYzoGXOL5nUQBRMXsXWla5i4KkG//QMzVP88m1+I3fdAQ==}
     engines: {node: '>=16.9.0'}
 
-  html-entities@2.6.0:
-    resolution: {integrity: sha512-kig+rMn/QOVRvr7c86gQ8lWXq+Hkv6CbAH1hLu+RG338StTpE8Z0b44SDVaqVu7HGKf27frdmUYEs9hTUX/cLQ==}
-
   html-url-attributes@3.0.1:
     resolution: {integrity: sha512-ol6UPyBWqsrO6EJySPz2O7ZSr856WDrEzM5zMqp+FJJLGMW35cLYmmZnl0vztAZxRUoNZJFTCohfjuIJ8I4QBQ==}
 
@@ -3359,16 +3353,6 @@ packages:
 
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
-
-  marked-react@4.0.0:
-    resolution: {integrity: sha512-+Kp1FSK0gT6q6uKjXvwaIigj++BkyKFxiQlrhDTu10H/awBvs1K4K1Uenu/6N7Ci4u0FxYtFuZxtgAZkW6w8gg==}
-    peerDependencies:
-      react: ^16.8.0 || >=17.0.0
-
-  marked@17.0.6:
-    resolution: {integrity: sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA==}
-    engines: {node: '>= 20'}
-    hasBin: true
 
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
@@ -7095,8 +7079,6 @@ snapshots:
 
   hono@4.12.25: {}
 
-  html-entities@2.6.0: {}
-
   html-url-attributes@3.0.1: {}
 
   http-errors@2.0.1:
@@ -7362,14 +7344,6 @@ snapshots:
       source-map-js: 1.2.1
 
   markdown-table@3.0.4: {}
-
-  marked-react@4.0.0(react@19.2.4):
-    dependencies:
-      html-entities: 2.6.0
-      marked: 17.0.6
-      react: 19.2.4
-
-  marked@17.0.6: {}
 
   math-intrinsics@1.1.0: {}
 

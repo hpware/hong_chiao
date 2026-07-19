@@ -44,6 +44,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { Tooltip } from "./ui/tooltip";
+import { toast } from "sonner";
 
 type AiSettings = {
   apiUrl: string;
@@ -354,7 +355,12 @@ function Chat({ settings }: { settings: AiSettings }) {
   useEffect(() => {
     const saved = localStorage.getItem("ai_chat");
     if (saved) {
-      setMessages(JSON.parse(saved));
+      try {
+        setMessages(JSON.parse(saved));
+      } catch {
+        toast.error("無法存取 localStorage 的聊天記錄，系統已自動移除。");
+        localStorage.removeItem("ai_chat");
+      }
     }
   }, []);
   // auto save chat to localStorage.

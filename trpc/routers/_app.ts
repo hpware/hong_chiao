@@ -1030,7 +1030,6 @@ export const appRouter = createTRPCRouter({
           opts.input.captcha,
           browserCookies,
         );
-        console.log(opts.path); // "login"
         if (!login.success) {
           throw new TRPCError({
             code: "UNAUTHORIZED",

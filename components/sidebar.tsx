@@ -12,7 +12,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
@@ -21,10 +20,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Award,
-  BadgePlus,
   BinocularsIcon,
-  BotMessageSquareIcon,
-  ClipboardList,
   DiamondPercentIcon,
   HandCoins,
   InfoIcon,
@@ -49,11 +45,13 @@ const navItems = [
         title: "查詢假單",
         href: "/leave",
         icon: BinocularsIcon,
+        workInProgress: false,
       },
       {
         title: "申請",
         href: "/leave/new",
         icon: PenLine,
+        workInProgress: false,
       },
     ],
   },
@@ -64,6 +62,7 @@ const navItems = [
         title: "獎學金",
         href: "/credit-application",
         icon: HandCoins,
+        workInProgress: true,
       },
     ],
   },
@@ -74,24 +73,33 @@ const navItems = [
         title: "查詢學費資訊",
         href: "/tuition",
         icon: BinocularsIcon,
+        workInProgress: false,
       },
       {
         title: "抵免申請",
         href: "/tuition/discount",
         icon: DiamondPercentIcon,
+        workInProgress: true,
       },
     ],
   },
-  {
+  /*{
     title: "不利處境助學",
     items: [
       {
         title: "申請",
-        href: "/",
+        href: "/help-disadvantaged-students/register",
         icon: BadgePlus,
+        workInProgress: true,
+      },
+      {
+        title: "申請",
+        href: "/help-disadvantaged-students/register",
+        icon: BadgePlus,
+        workInProgress: true,
       },
     ],
-  },
+  }, */
   {
     title: "獎懲",
     items: [
@@ -99,6 +107,7 @@ const navItems = [
         title: "獎懲",
         href: "/reward",
         icon: Award,
+        workInProgress: true,
       },
     ],
   },
