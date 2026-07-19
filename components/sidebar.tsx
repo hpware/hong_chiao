@@ -21,8 +21,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Award,
   BinocularsIcon,
-  BotMessageSquareIcon,
-  ClipboardList,
   DiamondPercentIcon,
   HandCoins,
   InfoIcon,
@@ -41,27 +39,19 @@ import { toast } from "sonner";
 
 const navItems = [
   {
-    title: "AI",
-    items: [
-      {
-        title: "機器人",
-        href: "/chat",
-        icon: BotMessageSquareIcon,
-      },
-    ],
-  },
-  {
-    title: "假單",
+    title: "請假",
     items: [
       {
         title: "查詢假單",
         href: "/leave",
         icon: BinocularsIcon,
+        workInProgress: false,
       },
       {
         title: "申請",
         href: "/leave/new",
         icon: PenLine,
+        workInProgress: false,
       },
     ],
   },
@@ -72,6 +62,7 @@ const navItems = [
         title: "獎學金",
         href: "/credit-application",
         icon: HandCoins,
+        workInProgress: true,
       },
     ],
   },
@@ -82,14 +73,33 @@ const navItems = [
         title: "查詢學費資訊",
         href: "/tuition",
         icon: BinocularsIcon,
+        workInProgress: false,
       },
       {
         title: "抵免申請",
         href: "/tuition/discount",
         icon: DiamondPercentIcon,
+        workInProgress: true,
       },
     ],
   },
+  /*{
+    title: "不利處境助學",
+    items: [
+      {
+        title: "申請",
+        href: "/help-disadvantaged-students/register",
+        icon: BadgePlus,
+        workInProgress: true,
+      },
+      {
+        title: "申請",
+        href: "/help-disadvantaged-students/register",
+        icon: BadgePlus,
+        workInProgress: true,
+      },
+    ],
+  }, */
   {
     title: "獎懲",
     items: [
@@ -97,6 +107,7 @@ const navItems = [
         title: "獎懲",
         href: "/reward",
         icon: Award,
+        workInProgress: true,
       },
     ],
   },
@@ -150,12 +161,14 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
   useEffect(() => {
     if (renewQuery.error?.data?.code === "UNAUTHORIZED") {
       toast.error("Session 過期 請重新登入");
-      router.push("/api/auth/logout?expired=true");
+
+      router.push("/api/auth/logout?prefill=true");
     }
   }, [renewQuery.error, router]);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarRail />
       <SidebarHeader className="p-4">
         <div className="flex items-center justify-between gap-3">
           <Link
@@ -182,38 +195,43 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
       </SidebarHeader>
 
       <SidebarContent>
-        {navItems.map((cat) => {
+        {navItems.map((cat, i) => {
           return (
-            <SidebarGroup key={cat.title}>
-              <SidebarGroupLabel>{cat.title}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {cat.items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = pathname === item.href;
+            <div key={cat.title}>
+              {i > 0 && (
+                <hr className="hidden group-data-[collapsible=icon]:block" />
+              )}
+              <SidebarGroup>
+                <SidebarGroupLabel>{cat.title}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {cat.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = pathname === item.href;
 
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          tooltip={item.title}
-                          isActive={isActive}
-                          className="transition-all duration-100"
-                        >
-                          <Link
-                            href={item.href}
-                            onClick={() => setOpenMobile(false)}
+                      return (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton
+                            asChild
+                            tooltip={item.title}
+                            isActive={isActive}
+                            className="transition-all duration-100"
                           >
-                            <Icon />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+                            <Link
+                              href={item.href}
+                              onClick={() => setOpenMobile(false)}
+                            >
+                              <Icon />
+                              <span>{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </div>
           );
         })}
       </SidebarContent>

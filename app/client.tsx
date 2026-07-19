@@ -4,6 +4,11 @@ import { useEffect, useMemo } from "react";
 import { useTRPC } from "@/trpc/client";
 import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
+import { BarChart } from "@/components/dither-kit/bar-chart";
+import { Area } from "@/components/dither-kit/area";
+import { XAxis } from "@/components/dither-kit/x-axis";
+import { YAxis } from "@/components/dither-kit/y-axis";
+import { Tooltip } from "@/components/dither-kit/tooltip";
 import {
   ArrowRightToLine,
   DiamondPercentIcon,
@@ -11,6 +16,8 @@ import {
   RotateCcwKeyIcon,
 } from "lucide-react";
 import Table from "@/components/table";
+import DOMPurify from "dompurify";
+import { Bar } from "@/components/dither-kit";
 
 type LeaveResponse = {
   success: boolean;
@@ -105,6 +112,12 @@ export default function Client() {
     },
   ];
 
+  const leaveChart = useMemo(
+    () =>
+      queryData?.data.leaves.map((l) => ({ type: l.type, days: l.data })) ?? [],
+    [queryData],
+  );
+
   return (
     <div>
       <div className="pt-7 pl-7">
@@ -139,11 +152,7 @@ export default function Client() {
       </div>
       <div className="grid gap-3 px-7 sm:grid-cols-2 lg:grid-cols-3 pt-5 mt-0">
         {cards.map((card) => {
-          if (!(
-            card.label === "缺曠紀錄" ||
-            card.label === "曠課" ||
-            card.label === "操行分數"
-          ))
+          if (!(card.label === "缺曠紀錄" || card.label === "操行分數"))
             return null;
           return (
             <div
@@ -158,7 +167,61 @@ export default function Client() {
           );
         })}
       </div>
-      <Table columns={[]} data={annoucementsData || []} className="mt-5 mx-7" />
+      {leaveChart.length > 0 && (
+        <div className="mx-7 mt-5 h-[180px]">
+          <BarChart
+            data={leaveChart.filter((item) => item.type !== "操行分數")}
+            config={{ days: { label: "天數", color: "blue" } }}
+            bloom="low"
+          >
+            <XAxis dataKey="type" />
+            <YAxis />
+            <Tooltip labelKey="type" />
+            <Bar dataKey="days" variant="gradient" />
+          </BarChart>
+        </div>
+      )}
+      <div className="mt-5 mx-7">
+        <h1 className="text-1xl">公布欄</h1>
+        <Table
+          columns={[
+            {
+              header: "",
+              accessorKey: "date",
+              cell: ({ row }) => (
+                <span>
+                  <span className="font-bold text-base">
+                    {row.original.unit.trim().length === 0
+                      ? "系統訊息"
+                      : row.original.unit}
+                  </span>
+                  {"  "}
+                  <span className="text-xs">
+                    公告到:
+                    {row.original.date.replace(/^\d{4}\/\d{2}\/\d{2}\~/, "")}
+                  </span>
+                </span>
+              ),
+            },
+            {
+              header: "公布資訊",
+              accessorKey: "content",
+              cell: ({ row }) => (
+                <span
+                  className="break-all"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(
+                      row.original.content.replaceAll("\n", "<br/>"),
+                    ),
+                  }}
+                ></span>
+              ),
+            },
+          ]}
+          data={annoucementsData || []}
+        />
+      </div>
+
       {/*<div className="rounded-lg border border-border bg-background p-4 shadow-sm"></div> */}
     </div>
   );

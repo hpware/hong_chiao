@@ -205,6 +205,7 @@ function ChangeSiteSettingsOnThisDevice() {
     apiToken: "",
     aiModel: "",
     aiBypassCors: "",
+    aiDisabled: "",
   });
 
   useEffect(() => {
@@ -213,6 +214,7 @@ function ChangeSiteSettingsOnThisDevice() {
       apiToken: localStorage.getItem("ai_apiToken") ?? "",
       aiModel: localStorage.getItem("ai_model") ?? "",
       aiBypassCors: localStorage.getItem("ai_bypassCors") ?? "",
+      aiDisabled: localStorage.getItem("ai_disabled") ?? "",
     });
   }, []);
 
@@ -225,25 +227,33 @@ function ChangeSiteSettingsOnThisDevice() {
           e.preventDefault();
           toast.promise(
             async () => {
-              const formData = new FormData(e.currentTarget);
-              const apiUrl = formData.get("ai_ApiUrl")?.toString() as string;
-              const apiToken = formData
-                .get("ai_ApiToken")
-                ?.toString() as string;
-              const aiModel = formData.get("ai_Model")?.toString() as string;
-              const aiBypassCors = formData.has("ai_BypassCors")
-                ? "true"
-                : "false";
-              if (!apiUrl || !apiToken || !aiModel)
+              // 停用時輸入框會被 disabled、不會進到 FormData，
+              // 所以改從受控的 state 讀值，停用時才不會把已存的設定清空
+              const apiUrl = preSetDetails.apiUrl.trim();
+              const apiToken = preSetDetails.apiToken.trim();
+              const aiModel = preSetDetails.aiModel.trim();
+              const aiBypassCors =
+                preSetDetails.aiBypassCors === "true" ? "true" : "false";
+              const aiDisabled =
+                preSetDetails.aiDisabled === "true" ? "true" : "false";
+              if (aiDisabled !== "true" && (!apiUrl || !apiToken || !aiModel))
                 throw new Error("API URL, API Token 和 Model 都必須填寫");
-              if (!apiUrl.startsWith("https://"))
+              if (aiDisabled !== "true" && !apiUrl.startsWith("https://"))
                 throw new Error("API URL 一定要是 https:// 開頭");
               // save
               localStorage.setItem("ai_apiUrl", apiUrl);
               localStorage.setItem("ai_apiToken", apiToken);
               localStorage.setItem("ai_model", aiModel);
               localStorage.setItem("ai_bypassCors", aiBypassCors);
-              setPreSetDetails({ apiUrl, apiToken, aiModel, aiBypassCors });
+              localStorage.setItem("ai_disabled", aiDisabled);
+              window.dispatchEvent(new Event("ai-settings-changed"));
+              setPreSetDetails({
+                apiUrl,
+                apiToken,
+                aiModel,
+                aiBypassCors,
+                aiDisabled,
+              });
             },
             {
               success: "設定已保存",
@@ -252,6 +262,24 @@ function ChangeSiteSettingsOnThisDevice() {
           );
         }}
       >
+        <div className="flex flex-row space-x-1 items-center">
+          <label className="text-sm flex flex-row space-x-1 items-center">
+            <LinkIcon className="p-1" />
+            <span>關閉 AI 功能</span>
+          </label>
+          <input
+            className="px-3 py-2"
+            name="aiDisabled"
+            type="checkbox"
+            checked={preSetDetails.aiDisabled === "true"}
+            onChange={(e) => {
+              setPreSetDetails((prev) => ({
+                ...prev,
+                aiDisabled: e.target.checked ? "true" : "false",
+              }));
+            }}
+          />
+        </div>
         <div>
           <label className="text-sm flex flex-row space-x-1 items-center">
             <LinkIcon className="p-1" />
@@ -263,6 +291,7 @@ function ChangeSiteSettingsOnThisDevice() {
               name="ai_ApiUrl"
               type="text"
               value={preSetDetails.apiUrl}
+              disabled={preSetDetails.aiDisabled === "true"}
               onChange={(e) => {
                 setPreSetDetails((prev) => ({
                   ...prev,
@@ -283,6 +312,7 @@ function ChangeSiteSettingsOnThisDevice() {
               name="ai_ApiToken"
               type={displaySecureDetails.token ? "text" : "password"}
               value={preSetDetails.apiToken}
+              disabled={preSetDetails.aiDisabled === "true"}
               onChange={(e) => {
                 setPreSetDetails((prev) => ({
                   ...prev,
@@ -294,6 +324,7 @@ function ChangeSiteSettingsOnThisDevice() {
               type="button"
               variant="outline"
               size="icon"
+              disabled={preSetDetails.aiDisabled === "true"}
               onClick={() => {
                 setDisplaySecureDetails((prev) => ({
                   ...prev,
@@ -317,6 +348,7 @@ function ChangeSiteSettingsOnThisDevice() {
               name="ai_Model"
               type="text"
               value={preSetDetails.aiModel}
+              disabled={preSetDetails.aiDisabled === "true"}
               onChange={(e) => {
                 setPreSetDetails((prev) => ({
                   ...prev,
@@ -335,6 +367,7 @@ function ChangeSiteSettingsOnThisDevice() {
             className="px-3 py-2"
             name="ai_BypassCors"
             type="checkbox"
+            disabled={preSetDetails.aiDisabled === "true"}
             checked={preSetDetails.aiBypassCors === "true"}
             onChange={(e) => {
               setPreSetDetails((prev) => ({
