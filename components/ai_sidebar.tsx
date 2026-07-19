@@ -43,6 +43,7 @@ import {
   WrenchIcon,
   XIcon,
 } from "lucide-react";
+import { Tooltip } from "./ui/tooltip";
 
 type AiSettings = {
   apiUrl: string;
@@ -702,10 +703,14 @@ const AiChart = memo(function AiChart({ chart }: { chart: ChartSpec }) {
             config={config}
             dataKey="value"
             nameKey="name"
+            innerRadius={0.55}
             bloom="low"
           >
             <Pie variant="gradient" />
             <Legend />
+            <ChartTooltip
+              valueFormatter={(value) => value.toLocaleString("zh-TW")}
+            />
           </PieChart>
         </div>
       </div>
