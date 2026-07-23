@@ -445,7 +445,7 @@ function Chat({ settings }: { settings: AiSettings }) {
     const current = getSemesterFromDate();
     const systemMessage: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
       role: "system",
-      content: `你是校務系統反代網站裡的 AI 助理，協助學生查詢自己的校務資料。今天是 ${new Date().toLocaleDateString("zh-TW")}，目前是 ${current.year} 學年第 ${current.sem} 學期 (民國學年)。需要使用者資料時請使用提供的工具查詢，不要瞎掰。適合視覺化的數字 (比較、趨勢、佔比) 可以用 render_chart 畫圖表給使用者看。請用繁體中文回覆，並保持簡潔。`,
+      content: `你是校務系統反代網站裡的 AI 助理，協助學生查詢自己的校務資料。今天是 ${new Date().toLocaleDateString("zh-TW")}，目前是 ${current.year} 學年第 ${current.sem} 學期 (民國學年)。需要使用者資料時請使用提供的工具查詢，不要瞎掰。適合視覺化的數字 (比較、趨勢、佔比) 可以用 render_chart 畫圖表給使用者看。請用保持簡潔，並依照使用者的語言回覆。並在需要使用圖表的時候使用圖表。`,
     };
     const api = [...apiRef.current, { role: "user" as const, content }];
 
