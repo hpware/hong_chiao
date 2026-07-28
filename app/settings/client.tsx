@@ -5,16 +5,19 @@ import { Input } from "@/components/ui/input";
 import { useTRPC } from "@/trpc/client";
 import { useMutation } from "@tanstack/react-query";
 import {
+  BotIcon,
   Eye,
   EyeClosed,
   KeyRoundIcon,
   LinkIcon,
   RectangleEllipsisIcon,
   Scale,
+  WaypointsIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 export default function Client() {
   const trpc = useTRPC();
@@ -263,19 +266,18 @@ function ChangeSiteSettingsOnThisDevice() {
         }}
       >
         <div className="flex flex-row space-x-1 items-center">
-          <label className="text-sm flex flex-row space-x-1 items-center">
-            <LinkIcon className="p-1" />
-            <span>關閉 AI 功能</span>
+          <label className="flex flex-row space-x-1 items-center text-lg py-1">
+            <BotIcon />
+            <span>AI 功能</span>
           </label>
-          <input
-            className="px-3 py-2"
+          <Switch
+            size="lg"
             name="aiDisabled"
-            type="checkbox"
-            checked={preSetDetails.aiDisabled === "true"}
-            onChange={(e) => {
+            checked={preSetDetails.aiDisabled === "false"}
+            onCheckedChange={(checked) => {
               setPreSetDetails((prev) => ({
                 ...prev,
-                aiDisabled: e.target.checked ? "true" : "false",
+                aiDisabled: checked ? "false" : "true",
               }));
             }}
           />
@@ -360,19 +362,17 @@ function ChangeSiteSettingsOnThisDevice() {
         </div>
         <div className="flex flex-row space-x-1 items-center">
           <label className="text-sm flex flex-row space-x-1 items-center">
-            <LinkIcon className="p-1" />
-            <span>AI 要求透過伺服器傳送 (建議勾選，避免AI公司阻擋要求):</span>
+            <WaypointsIcon className="p-1" />
+            <span>AI 要求透過伺服器傳送 (建議開啟，避免AI公司阻擋要求)</span>
           </label>
-          <input
-            className="px-3 py-2"
+          <Switch
             name="ai_BypassCors"
-            type="checkbox"
             disabled={preSetDetails.aiDisabled === "true"}
             checked={preSetDetails.aiBypassCors === "true"}
-            onChange={(e) => {
+            onChange={(checked) => {
               setPreSetDetails((prev) => ({
                 ...prev,
-                aiBypassCors: e.target.checked ? "true" : "false",
+                aiBypassCors: checked ? "true" : "false",
               }));
             }}
           />
