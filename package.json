@@ -1,6 +1,6 @@
 {
   "name": "hong_chiao_proxy",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": false,
   "packageManager": "pnpm@10.28.2",
   "scripts": {

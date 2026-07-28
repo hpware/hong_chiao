@@ -6,6 +6,7 @@ import {
   CodeXmlIcon,
   Eye,
   EyeClosed,
+  InfoIcon,
   LockKeyholeIcon,
   RectangleEllipsisIcon,
   ShieldCheckIcon,
@@ -18,6 +19,11 @@ import Image from "next/image";
 import LoginBG from "./login_bg.jpg";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function Client() {
   const trpc = useTRPC();
@@ -227,9 +233,15 @@ export default function Client() {
             </div>
 
             <div className="flex justify-between pt-2 items-center">
-              <span className="text-sm text-accent-foreground/70 items-center select-text">
-                伺服器不會儲存您的帳號密碼與 Cookie。
-              </span>
+              <Tooltip>
+                <TooltipTrigger type="button">
+                  <InfoIcon className="text-accent-foreground/70" />
+                </TooltipTrigger>
+                <TooltipContent className="flex flex-col">
+                  <span>學校主機可隨時恢復到原先的密碼</span>
+                  <span>伺服器不會儲存您的帳號密碼與 Cookies</span>
+                </TooltipContent>
+              </Tooltip>
               <Button type="submit">登入</Button>
             </div>
           </form>
