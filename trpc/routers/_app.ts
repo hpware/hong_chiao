@@ -2,15 +2,11 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { cookies } from "next/headers";
 import { TRPCError } from "@trpc/server";
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import { baseProcedure, createTRPCRouter } from "../init";
 // tRPC tools
 import {
-  USER_AGENT,
-  endpoint,
   trpcGetBrowserCookies as getBrowserCookies,
   trpcGetBrowserCookieByName as getBrowserCookieByName,
-  type BrowserCookieType,
 } from "@/components/univeralComponents";
 // pxItems import
 // bill / discount / reward / tuition
@@ -26,10 +22,13 @@ import SubmitCertificate from "@/components/px_items/certificate/submit";
 
 // credit-application
 import GetCreditApplications from "@/components/px_items/credit-application";
+import GetCreditApplicationData from "@/components/px_items/credit-application/yourData";
+import SubmitCreditApplication from "@/components/px_items/credit-application/submit";
 
 // home
 import GetAnnouncements from "@/components/px_items/home/announcements";
 import GetHomeData from "@/components/px_items/home/data";
+import GetFeatures from "@/components/px_items/home/features";
 
 // leave stuff
 import {
@@ -236,24 +235,6 @@ function toROCDate(input: string | number | Date) {
   return `${year}/${month}/${day}`;
 }
 
-async function withBrowser<T>(
-  browserCookies: BrowserCookieType,
-  callback: (context: BrowserContext) => Promise<T>,
-) {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
-
-  try {
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-    return await callback(context);
-  } finally {
-    await context?.close();
-    await browser?.close();
-  }
-}
-
 export const appRouter = createTRPCRouter({
   indexPage: createTRPCRouter({
     basicLeaveData: baseProcedure
@@ -318,72 +299,13 @@ export const appRouter = createTRPCRouter({
           opts.input.year,
           opts.input.semi,
         );
-        const featureList = [
-          {
-            name: "discount",
-            requireBrowser: true,
-            requestComponent: async (context: BrowserContext) => {
-              const buildURLParams = new URLSearchParams();
-              buildURLParams.append("Qmodel", "");
-              const response = await context.request.post(
-                endpoint(apiUrl, "/YSJStu/YSJSTU/YSJSTU_QryNotify"),
-                {
-                  data: buildURLParams.toString(),
-                  headers: {
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Content-Type":
-                      "application/x-www-form-urlencoded; charset=UTF-8",
-                  },
-                },
-              );
-              const result = await response.json();
-              return result.isOK === true;
-            },
-            isEnabled: true,
-          },
-        ];
-        const featureSelection = opts.input.feature?.split(",,");
-        const findFeatures =
-          featureSelection && featureSelection.length > 0
-            ? featureSelection.flatMap((item) => {
-                const foundFeature = featureList.find(
-                  (featureItem) => featureItem.name === item,
-                );
-                return foundFeature ? [foundFeature] : [];
-              })
-            : featureList;
-        const featureDoesNotExist =
-          featureSelection?.filter(
-            (item) =>
-              !featureList.some((featureItem) => featureItem.name === item),
-          ) ?? [];
-        const requiresBrowser = findFeatures.some(
-          (item) => item.requireBrowser,
-        );
-        const dataArray = requiresBrowser
-          ? await withBrowser(browserCookies, async (context) =>
-              Promise.all(
-                findFeatures.map(async (item) => {
-                  if (!item.isEnabled)
-                    return { name: item.name, disabled: true };
-                  if (!item.requireBrowser)
-                    return { name: item.name, disabled: false };
-                  return {
-                    name: item.name,
-                    disabled: await item.requestComponent(context),
-                  };
-                }),
-              ),
-            )
-          : findFeatures.map((item) => ({
-              name: item.name,
-              disabled: !item.isEnabled,
-            }));
+        const features = await GetFeatures(browserCookies, opts.input.feature);
 
         return {
           success: true,
-          error: featureDoesNotExist.length > 0 ? featureDoesNotExist : "",
-          data: dataArray,
+          error:
+            features.missingFeatures.length > 0 ? features.missingFeatures : "",
+          data: features.data,
           semiYear,
           semistry,
         };
@@ -712,32 +634,27 @@ export const appRouter = createTRPCRouter({
         };
       }),
     }),
+    billDownloadId: baseProcedure.query(async () => {
+      const year = new Date().getFullYear();
+      const month = new Date().getMonth();
+      const rocYear = year - 1911;
+      let semisterYear: number = rocYear;
+      let semister: boolean = false; // false => 第一學期 | true => 第二學期
+      if (month > 2 && month < 7) {
+        semisterYear = rocYear - 1;
+        semister = true;
+      }
+      const apiUrl = requireApiUrl();
+      const { browserCookies } = await requireBrowserCookies(apiUrl);
+      const data = await GetBill(
+        browserCookies,
+        String(semisterYear),
+        !semister ? "1" : "2",
+      );
+      return data;
+    }),
   }),
-  bill: createTRPCRouter({
-    get: baseProcedure
-      .input(
-        z.object({
-          year: z.string(),
-          semi: z.string(),
-          kind: z.string(),
-          step: z.string(),
-        }),
-      )
-      .query(async (opts) => {
-        const apiUrl = requireApiUrl();
-        const { browserCookies } = await requireBrowserCookies(apiUrl);
-        const data = await GetBill(
-          browserCookies,
-          opts.input.year,
-          opts.input.semi,
-          opts.input.kind,
-          opts.input.step,
-        );
 
-        if (data.failedLogin) throwUnauthorized();
-        return data;
-      }),
-  }),
   reward: createTRPCRouter({
     get: baseProcedure
       .input(z.object({ year: z.number(), semistry: z.number() }))
@@ -808,98 +725,13 @@ export const appRouter = createTRPCRouter({
       .query(async (opts) => {
         const apiUrl = requireApiUrl();
         const { browserCookies } = await requireBrowserCookies(apiUrl);
+        const data = await GetCreditApplicationData(
+          browserCookies,
+          opts.input.id,
+        );
 
-        return withBrowser(browserCookies, async (context) => {
-          const buildURLParams = new URLSearchParams();
-          buildURLParams.append("ppqmodel[RMID]", opts.input.id);
-          buildURLParams.append("ppqmodel[RMDtlID]", "");
-          //ppqmodel[RMID]=A21&ppqmodel[RMDtlID]=
-          await context.request.post(
-            endpoint(apiUrl, "/YSKStu/YSKStu/YSK111SDetail"),
-            {
-              data: buildURLParams.toString(),
-              headers: {
-                "X-Requested-With": "XMLHttpRequest",
-                "Content-Type":
-                  "application/x-www-form-urlencoded; charset=UTF-8",
-              },
-            },
-          );
-          const buildURLParams2 = new URLSearchParams();
-          buildURLParams2.append("ppqmodel[objid]", "1");
-          buildURLParams2.append("ppqmodel[IsDtl]", "1");
-          const response = await context.request.post(
-            endpoint(apiUrl, "/YSKStu/YSKStu/YSK11_Qry"),
-            {
-              data: buildURLParams2.toString(),
-              headers: {
-                "X-Requested-With": "XMLHttpRequest",
-                "Content-Type":
-                  "application/x-www-form-urlencoded; charset=UTF-8",
-              },
-            },
-          );
-          const data = JSON.parse(await response.text());
-
-          if (!data.OK) throwUnauthorized();
-          const d = Array.isArray(data.obj) ? data.obj[0] : data.obj;
-
-          if (!d) {
-            return {
-              success: data.OK,
-              errMsg: data.MSG,
-              data: null,
-            };
-          }
-
-          return {
-            success: data.OK,
-            errMsg: data.MSG,
-            data: {
-              metadata: {
-                id: d.objid,
-                year: d.SemiYear,
-                semi: d.Semistry,
-                code: d.Code,
-                title: d.Title,
-                rmTitle: d.RMTitle,
-                status: d.Status,
-                publishOrg: {
-                  id: d.UnOrg,
-                  name: d.UnOrgText,
-                  personId: d.UnPer,
-                  personName: d.UnPerText,
-                  phoneExt: d.OfficePhoneExt,
-                  email: d.EMail,
-                },
-                note: d.Memo,
-              },
-              text: d.Method,
-              url: d.URL,
-              startDate: d.StartDate,
-              endDate: d.EndDate,
-              uploadDate: d.UploadDate,
-              reward: d.reward,
-              requirements: (d.ApplyList ?? []).map((i: any) => ({
-                logic: i.Logic,
-                logicText: i.LogicText,
-                text: `${i.Operand} ${i.Operator} ${i.Value}`,
-                note: d.Memo,
-                year: i.Year,
-                semi: i.Semi,
-              })),
-              documents: (d.DocList ?? []).map((i: any) => ({
-                text: i.Code,
-                required: i.Choose === "必備",
-                file: {
-                  name: i.ShowFileName,
-                  url: i.fileTitle,
-                },
-              })),
-              details: d.DetailList ?? [],
-            },
-          };
-        });
+        if (!data.success) throwUnauthorized();
+        return data;
       }),
     submitApplication: baseProcedure
       .input(
@@ -921,58 +753,10 @@ export const appRouter = createTRPCRouter({
       .mutation(async (opts) => {
         const apiUrl = requireApiUrl();
         const { browserCookies } = await requireBrowserCookies(apiUrl);
+        const data = await SubmitCreditApplication(browserCookies, opts.input);
 
-        return withBrowser(browserCookies, async (context) => {
-          const buildURLParams = new URLSearchParams();
-          buildURLParams.append("ppqmodel[objid]", "");
-          buildURLParams.append("ppqmodel[RMID]", opts.input.id);
-          buildURLParams.append("ppqmodel[RMDtlID]", "");
-          buildURLParams.append(
-            "ppqmodel[Descript]",
-            opts.input.descript || "",
-          );
-          opts.input.appendFiles.forEach((item, index) => {
-            buildURLParams.append(
-              `ppqmodel[AppendidxS][${index}][InId]`,
-              item.name,
-            );
-            buildURLParams.append(
-              `ppqmodel[AppendidxS][${index}][ShowFileName]`,
-              item.file.fileName,
-            );
-            buildURLParams.append(
-              `ppqmodel[AppendidxS][${index}][DPath]`,
-              item.file.dPath,
-            );
-            buildURLParams.append(
-              `ppqmodel[AppendidxS][${index}][SPath]`,
-              item.file.sPath,
-            );
-            buildURLParams.append(
-              `ppqmodel[AppendidxS][${index}][FileTitle]`,
-              item.file.fileName,
-            );
-          });
-          const response = await context.request.post(
-            endpoint(apiUrl, "/YSKStu/YSKStu/YSK11_Save"),
-            {
-              data: buildURLParams.toString(),
-              headers: {
-                "X-Requested-With": "XMLHttpRequest",
-                "Content-Type":
-                  "application/x-www-form-urlencoded; charset=UTF-8",
-              },
-            },
-          );
-          const data = JSON.parse(await response.text());
-
-          if (!data.OK) throwUnauthorized();
-          return {
-            success: data.OK,
-            errMsg: data.MSG,
-            other: data.obj,
-          };
-        });
+        if (!data.success) throwUnauthorized();
+        return data;
       }),
   }),
   // auth/user

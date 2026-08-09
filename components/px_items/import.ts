@@ -18,10 +18,17 @@ export { default as SubmitCertificate } from "./certificate/submit";
 
 // credit-application
 export { default as GetCreditApplications } from "./credit-application";
+export {
+  default as GetCreditApplicationData,
+} from "./credit-application/yourData";
+export {
+  default as SubmitCreditApplication,
+} from "./credit-application/submit";
 
 // home
 export { default as GetAnnouncements } from "./home/announcements";
 export { default as GetHomeData } from "./home/data";
+export { default as GetFeatures } from "./home/features";
 
 // leave
 export { GetLeaves, CreateLeave, DeleteLeave } from "./leave";

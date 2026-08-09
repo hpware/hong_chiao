@@ -16,7 +16,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useTRPC, useTRPCClient } from "@/trpc/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSemesterFromDate } from "@/lib/semester";
+import {
+  AI_CREDIT_APPLICATION_DRAFT_EVENT,
+  getAiCreditApplicationDraftKey,
+  type AiCreditApplicationDraft,
+} from "@/lib/ai-page-actions";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import OpenAI from "openai";
@@ -59,6 +65,22 @@ type ChartSpec = {
   label: string;
   points: { name: string; value: number }[];
 };
+
+const pageDestinations = {
+  home: { href: "/", label: "首頁" },
+  leave: { href: "/leave", label: "請假紀錄" },
+  reward: { href: "/reward", label: "獎懲紀錄" },
+  credit_application: { href: "/credit-application", label: "獎學金" },
+  tuition: { href: "/tuition", label: "學費資訊" },
+  tuition_bill: { href: "/tuition/bill", label: "繳費單" },
+  tuition_discount: { href: "/tuition/discount", label: "學費抵免申請" },
+  settings: { href: "/settings", label: "設定" },
+  ai_settings: { href: "/settings#local_settings", label: "AI 設定" },
+  change_password: { href: "/settings#password", label: "更改密碼" },
+  about: { href: "/platform/about", label: "關於此平台" },
+} as const;
+
+type PageDestinationId = keyof typeof pageDestinations;
 
 function readAiSettings(): AiSettings {
   return {
@@ -191,6 +213,89 @@ const toolDefs: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "open_page",
+      description:
+        "在目前網站中替使用者開啟頁面。只要網站已有適合呈現資料的頁面，就優先用這個工具顯示資料，而不是把完整資料列在聊天中。",
+      parameters: {
+        type: "object",
+        properties: {
+          page: {
+            type: "string",
+            enum: [
+              "home",
+              "leave",
+              "reward",
+              "credit_application",
+              "tuition",
+              "tuition_bill",
+              "tuition_discount",
+              "settings",
+              "ai_settings",
+              "change_password",
+              "about",
+            ],
+            description:
+              "要開啟的頁面：首頁、請假紀錄、獎懲紀錄、獎學金、學費資訊、繳費單、學費抵免申請、設定、AI 設定、更改密碼或關於此平台。",
+          },
+        },
+        required: ["page"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_credit_applications",
+      description:
+        "取得目前可用的獎學金申請項目。要替使用者填寫申請前，先用這個工具找出正確的 applicationId。",
+      parameters: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "fill_credit_application",
+      description:
+        "把申請說明填入指定的獎學金申請頁並開啟該頁面。這只建立草稿，不會送出申請。",
+      parameters: {
+        type: "object",
+        properties: {
+          applicationId: {
+            type: "string",
+            description:
+              "由 get_credit_applications 取得的獎學金申請 ID。",
+          },
+          description: {
+            type: "string",
+            description: "要填入申請說明欄位的草稿，最多 4000 個字元。",
+          },
+        },
+        required: ["applicationId", "description"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "download_tuition_bill",
+      description:
+        "下載使用者目前學期的繳費單 PDF。只有在使用者明確要求下載時才使用。",
+      parameters: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "get_leaves",
       description: "取得使用者的請假單列表",
       parameters: {
@@ -305,8 +410,41 @@ const toolLabels: Record<string, string> = {
   get_tuition: "學費資訊",
   get_announcements: "公告",
   get_user_name: "使用者姓名",
+  get_credit_applications: "獎學金申請項目",
+  fill_credit_application: "獎學金申請草稿",
+  download_tuition_bill: "繳費單 PDF",
+  open_page: "頁面",
   render_chart: "圖表",
 };
+
+function parsePageDestination(args: Record<string, unknown>) {
+  const page = typeof args.page === "string" ? args.page : "";
+  if (!Object.prototype.hasOwnProperty.call(pageDestinations, page)) {
+    throw new Error("不支援這個頁面");
+  }
+
+  return pageDestinations[page as PageDestinationId];
+}
+
+function requireToolString(
+  args: Record<string, unknown>,
+  key: string,
+  label: string,
+) {
+  const value = typeof args[key] === "string" ? args[key].trim() : "";
+  if (value.length === 0) throw new Error(`${label}不能是空白`);
+  return value;
+}
+
+function startBrowserDownload(href: string, fileName: string) {
+  const link = document.createElement("a");
+  link.href = href;
+  link.download = fileName;
+  link.hidden = true;
+  document.body.append(link);
+  link.click();
+  link.remove();
+}
 
 function parseChartSpec(args: Record<string, unknown>): ChartSpec {
   const chartType = args.chartType;
@@ -332,6 +470,7 @@ function parseChartSpec(args: Record<string, unknown>): ChartSpec {
 }
 
 function Chat({ settings }: { settings: AiSettings }) {
+  const router = useRouter();
   const trpc = useTRPC();
   const trpcClient = useTRPCClient();
   const queryClient = useQueryClient();
@@ -419,6 +558,105 @@ function Chat({ settings }: { settings: AiSettings }) {
         return queryClient.fetchQuery(trpc.home.announcements.queryOptions());
       case "get_user_name":
         return queryClient.fetchQuery(trpc.user.name.queryOptions());
+      case "get_credit_applications": {
+        const response = await queryClient.fetchQuery(
+          trpc.creditApplication.list.queryOptions(),
+        );
+        const rows: unknown[] = Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        return {
+          success: response.success,
+          applications: rows.map((row) => {
+            const item = row as Record<string, unknown>;
+            return {
+              applicationId: String(item.objid ?? ""),
+              title: String(item.Title ?? ""),
+              organization: String(item.UnOrgText ?? ""),
+              startDate: String(item.StartDate ?? ""),
+              endDate: String(item.EndDate ?? ""),
+              status: String(item.StatusText ?? item.Status ?? ""),
+            };
+          }),
+        };
+      }
+      case "fill_credit_application": {
+        const applicationId = requireToolString(
+          args,
+          "applicationId",
+          "獎學金申請 ID",
+        ).toUpperCase();
+        const description = requireToolString(args, "description", "申請說明");
+        if (description.length > 4000) {
+          throw new Error("申請說明不能超過 4000 個字元");
+        }
+
+        const response = await queryClient.fetchQuery(
+          trpc.creditApplication.list.queryOptions(),
+        );
+        const rows: unknown[] = Array.isArray(response.data)
+          ? response.data
+          : [];
+        const application = rows.find((row) => {
+          const item = row as Record<string, unknown>;
+          return String(item.objid ?? "").toUpperCase() === applicationId;
+        }) as Record<string, unknown> | undefined;
+        if (!application) throw new Error("找不到這個獎學金申請項目");
+
+        const draft: AiCreditApplicationDraft = {
+          applicationId,
+          description,
+        };
+        sessionStorage.setItem(
+          getAiCreditApplicationDraftKey(applicationId),
+          JSON.stringify(draft),
+        );
+        window.dispatchEvent(
+          new CustomEvent<AiCreditApplicationDraft>(
+            AI_CREDIT_APPLICATION_DRAFT_EVENT,
+            { detail: draft },
+          ),
+        );
+
+        const path = `/credit-application/apply/${encodeURIComponent(applicationId)}`;
+        router.push(path);
+        toast.success("已填入獎學金申請草稿，請確認後再送出");
+        return {
+          success: true,
+          applicationId,
+          title: String(application.Title ?? ""),
+          path,
+          submitted: false,
+          message: "已填入申請草稿並開啟頁面，尚未送出申請",
+        };
+      }
+      case "download_tuition_bill": {
+        const bill = await queryClient.fetchQuery(
+          trpc.tuition.billDownloadId.queryOptions(),
+        );
+        if (!bill.id) throw new Error("找不到目前學期的繳費單");
+
+        const fileName = (bill.name || "繳費單").replace(/\.pdf$/i, "");
+        const href = `/api/downloads/tuition_bill/${encodeURIComponent(bill.id)}?fileName=${encodeURIComponent(fileName)}`;
+        startBrowserDownload(href, `${fileName}.pdf`);
+        toast.success("已開始下載繳費單 PDF");
+        return {
+          success: true,
+          fileName: `${fileName}.pdf`,
+          message: "已開始下載繳費單 PDF",
+        };
+      }
+      case "open_page": {
+        const destination = parsePageDestination(args);
+        router.push(destination.href);
+        return {
+          success: true,
+          page: destination.label,
+          path: destination.href,
+          message: `已為使用者開啟${destination.label}`,
+        };
+      }
       case "render_chart": {
         const spec = parseChartSpec(args);
         setMessages((prev) => [
@@ -445,7 +683,11 @@ function Chat({ settings }: { settings: AiSettings }) {
     const current = getSemesterFromDate();
     const systemMessage: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
       role: "system",
-      content: `你是校務系統反代網站裡的 AI 助理，協助學生查詢自己的校務資料。今天是 ${new Date().toLocaleDateString("zh-TW")}，目前是 ${current.year} 學年第 ${current.sem} 學期 (民國學年)。需要使用者資料時請使用提供的工具查詢，不要瞎掰。適合視覺化的數字 (比較、趨勢、佔比) 可以用 render_chart 畫圖表給使用者看。請用保持簡潔，並依照使用者的語言回覆。並在需要使用圖表的時候使用圖表。`,
+      content: `你是校務系統反代網站裡的 AI 助理，協助學生查詢自己的校務資料。今天是 ${new Date().toLocaleDateString("zh-TW")}，目前是 ${current.year} 學年第 ${current.sem} 學期 (民國學年)。需要使用者資料時請使用提供的工具，不要瞎掰。
+
+核心互動原則：網站頁面是呈現使用者資料的主要介面，聊天只負責導覽、簡短說明與無對應頁面的回答。當使用者想查看、顯示或瀏覽資料，而且網站已有對應頁面時，優先直接呼叫 open_page，不要先查詢後把完整資料貼在聊天中，也不需要等使用者明確說「開啟頁面」。對應關係：請假或缺曠用 leave（摘要可用 home）、獎懲用 reward、學費用 tuition、繳費單用 tuition_bill、獎學金申請用 credit_application、公告或首頁摘要用 home。open_page 成功後只需簡短告知已開啟。只有在使用者要求特定答案、摘要、比較、計算或圖表時，才使用資料查詢工具並在聊天中回答。
+
+要填寫獎學金申請時，先使用 get_credit_applications 找到正確 ID，再使用 fill_credit_application；它只填入草稿，絕對不要聲稱已送出。只有使用者明確要求下載繳費單時才能使用 download_tuition_bill。適合視覺化的數字（比較、趨勢、佔比）可以用 render_chart 畫圖表。請保持簡潔，並依照使用者的語言回覆。`,
     };
     const api = [...apiRef.current, { role: "user" as const, content }];
 
@@ -539,7 +781,14 @@ function Chat({ settings }: { settings: AiSettings }) {
               ...prev,
               {
                 role: "tool",
-                content: `查詢${toolLabels[tc.name] ?? tc.name}`,
+                content:
+                  tc.name === "open_page"
+                    ? `開啟${toolLabels[tc.name]}`
+                    : tc.name === "fill_credit_application"
+                      ? `填寫${toolLabels[tc.name]}`
+                      : tc.name === "download_tuition_bill"
+                        ? `下載${toolLabels[tc.name]}`
+                    : `查詢${toolLabels[tc.name] ?? tc.name}`,
               },
             ]);
           let result: string;

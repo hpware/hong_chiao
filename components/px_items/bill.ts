@@ -9,8 +9,6 @@ export default async function GetBill(
   browserCookies: BrowserCookieType,
   year: string,
   semi: string,
-  kind: string,
-  step: string,
 ) {
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
@@ -27,34 +25,32 @@ export default async function GetBill(
     const buildURLParams = new URLSearchParams();
     buildURLParams.append("SemiYear", year);
     buildURLParams.append("Semistry", semi);
-    buildURLParams.append("KindType", kind);
-    buildURLParams.append("Steps", step);
+    buildURLParams.append("KindType", "01");
+    buildURLParams.append("Steps", "1");
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
     await context.addCookies(browserCookies);
 
-    const response = await context.request.post(endpoint(apiUrl, "/"), {
-      data: buildURLParams.toString(),
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    const response = await context.request.post(
+      endpoint(apiUrl, "/YMR_Stu/YMR/Bill_DownloadbyStu"),
+      {
+        data: buildURLParams.toString(),
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
       },
-    });
-    const apiResponse = JSON.parse(await response.text());
+    );
+    const apiResponse = await response.json();
 
-    if (apiResponse.OnNoLogin) {
-      return {
-        failedLogin: true,
-        res: apiResponse,
-      };
-    }
+    if (apiResponse.OnNoLogin) throw new Error("已伺服器被登出");
+    if (!apiResponse.IsOK) throw new Error(apiResponse.Msg ?? "遠端伺服器錯誤");
 
     return {
-      failedLogin: false,
-      status: response.status(),
-      success: apiResponse.IsOK,
-      data: apiResponse.LeaveS,
+      success: true,
+      id: apiResponse.FileDownloadName.replace(".pdf", ""),
+      name: apiResponse.OutFileName,
     };
   } finally {
     await context?.close();

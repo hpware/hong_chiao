@@ -27,6 +27,7 @@ import {
   LogOut,
   Moon,
   PenLine,
+  ReceiptIcon,
   School,
   Sun,
   User2,
@@ -74,6 +75,12 @@ const navItems = [
         href: "/tuition",
         icon: BinocularsIcon,
         workInProgress: false,
+      },
+      {
+        title: "繳費單",
+        href: "/tuition/bill",
+        icon: ReceiptIcon,
+        workInProgress: true,
       },
       {
         title: "抵免申請",

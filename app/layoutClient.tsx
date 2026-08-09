@@ -38,7 +38,8 @@ export default function Client({
     readDisabled();
     // 設定頁儲存後會發出這個事件，讓 AI 按鈕不用重新整理就出現
     window.addEventListener("ai-settings-changed", readDisabled);
-    return () => window.removeEventListener("ai-settings-changed", readDisabled);
+    return () =>
+      window.removeEventListener("ai-settings-changed", readDisabled);
   }, []);
   return (
     <TRPCReactProvider>
