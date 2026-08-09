@@ -56,8 +56,20 @@ export default function Client() {
       root.style.colorScheme = previousColorScheme;
     };
   }, []);
-  const { data: getCaptcha } = useQuery(trpc.user.getCaptcha.queryOptions());
+  const {
+    data: getCaptcha,
+    error,
+    failureReason,
+    failureCount,
+  } = useQuery(trpc.user.getCaptcha.queryOptions());
   const loginMutation = useMutation(trpc.user.login.mutationOptions());
+
+  useEffect(() => {
+    if (error === null) return;
+    toast.error(
+      `Captcha 錯誤: "${failureReason}" 已重式${failureCount}次，請聯絡伺服器管理員維修此問題！`,
+    );
+  }, [error]);
 
   return (
     <>

@@ -100,17 +100,17 @@ const navItems = [
       },
     ],
   }, */
-  {
-    title: "獎懲",
-    items: [
-      {
-        title: "獎懲",
-        href: "/reward",
-        icon: Award,
-        workInProgress: true,
-      },
-    ],
-  },
+  //{
+  //  title: "獎懲",
+  //  items: [
+  //    {
+  //      title: "獎懲",
+  //      href: "/reward",
+  //      icon: Award,
+  //      workInProgress: true,
+  //    },
+  //  ],
+  //},
 ];
 
 export default function MainSidebar() {
