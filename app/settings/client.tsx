@@ -31,10 +31,6 @@ export default function Client() {
       section: "password",
       component: <ResetPassword trpc={trpc} router={router} />,
     },
-    {
-      section: "details",
-      component: <ChangeUserInfo />,
-    },
   ];
   return (
     <div className="pt-2">
