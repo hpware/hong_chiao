@@ -112,20 +112,21 @@ function validateYearSemi(year: number | string, semi: number | string) {
 }
 
 function mapHomeData(data: any) {
+  const score = data.obj?.Score;
   return {
     success: data.OK,
     errMsg: data.MSG,
     data: {
       leaves: [
-        { type: "曠課", data: data.obj.Score.Item1 },
-        { type: "病假", data: data.obj.Score.Item2 },
-        { type: "公假", data: data.obj.Score.Item3 },
-        { type: "事假", data: data.obj.Score.Item4 },
-        { type: "喪假", data: data.obj.Score.Item5 },
-        { type: "產假", data: data.obj.Score.Item6 },
-        { type: "操行分數", data: data.obj.Score.Item7 },
+        { type: "曠課", data: score?.Item1 ?? "" },
+        { type: "病假", data: score?.Item2 ?? "" },
+        { type: "公假", data: score?.Item3 ?? "" },
+        { type: "事假", data: score?.Item4 ?? "" },
+        { type: "喪假", data: score?.Item5 ?? "" },
+        { type: "產假", data: score?.Item6 ?? "" },
+        { type: "操行分數", data: score?.Item7 ?? "" },
       ],
-      absent: data.obj.Absent,
+      absent: data.obj?.Absent ?? [],
     },
   };
 }
@@ -753,7 +754,7 @@ export const appRouter = createTRPCRouter({
         return {
           success: data.OK,
           errMsg: data.MSG,
-          data: data.obj.DataList || [],
+          data: data.obj?.DataList || [],
         };
       }),
   }),
@@ -776,7 +777,33 @@ export const appRouter = createTRPCRouter({
         data: rows,
       };
     }),
-    detail: baseProcedure
+    details: baseProcedure
+      .input(z.object({ id: z.string() }))
+      .query(async (opts) => {
+        const apiUrl = requireApiUrl();
+        const { browserCookies } = await requireBrowserCookies(apiUrl);
+        const data = await GetCreditApplications(browserCookies, opts.input.id);
+
+        if (!data.OK) throwUnauthorized(data.MSG || expiredSessionMessage);
+        if (data.obj.length === 0) {
+          throw new TRPCError({
+            message: "此 Object ID 沒有任何資訊 😥",
+            code: "NOT_FOUND",
+          });
+        }
+        const rows = Array.isArray(data.obj)
+          ? data.obj
+          : Array.isArray(data.obj?.DataList)
+            ? data.obj.DataList
+            : [];
+
+        return {
+          success: data.OK,
+          errMsg: data.MSG,
+          data: rows,
+        };
+      }),
+    yourData: baseProcedure
       .input(z.object({ id: z.string() }))
       .query(async (opts) => {
         const apiUrl = requireApiUrl();
@@ -784,11 +811,9 @@ export const appRouter = createTRPCRouter({
 
         return withBrowser(browserCookies, async (context) => {
           const buildURLParams = new URLSearchParams();
-          buildURLParams.append("ppqmodel[objid]", "2");
-          buildURLParams.append("ppqmodel[Code]", opts.input.id);
-          buildURLParams.append("ppqmodel[Title]", "aa");
-          buildURLParams.append("ppqmodel[RMTitle]", "");
-
+          buildURLParams.append("ppqmodel[RMID]", opts.input.id);
+          buildURLParams.append("ppqmodel[RMDtlID]", "");
+          //ppqmodel[RMID]=A21&ppqmodel[RMDtlID]=
           await context.request.post(
             endpoint(apiUrl, "/YSKStu/YSKStu/YSK111SDetail"),
             {
@@ -817,7 +842,16 @@ export const appRouter = createTRPCRouter({
           const data = JSON.parse(await response.text());
 
           if (!data.OK) throwUnauthorized();
-          const d = data.obj[0];
+          const d = Array.isArray(data.obj) ? data.obj[0] : data.obj;
+
+          if (!d) {
+            return {
+              success: data.OK,
+              errMsg: data.MSG,
+              data: null,
+            };
+          }
+
           return {
             success: data.OK,
             errMsg: data.MSG,
@@ -846,7 +880,7 @@ export const appRouter = createTRPCRouter({
               endDate: d.EndDate,
               uploadDate: d.UploadDate,
               reward: d.reward,
-              requirements: d.ApplyList.map((i: any) => ({
+              requirements: (d.ApplyList ?? []).map((i: any) => ({
                 logic: i.Logic,
                 logicText: i.LogicText,
                 text: `${i.Operand} ${i.Operator} ${i.Value}`,
@@ -854,7 +888,7 @@ export const appRouter = createTRPCRouter({
                 year: i.Year,
                 semi: i.Semi,
               })),
-              documents: d.DocList.map((i: any) => ({
+              documents: (d.DocList ?? []).map((i: any) => ({
                 text: i.Code,
                 required: i.Choose === "必備",
                 file: {
@@ -862,7 +896,7 @@ export const appRouter = createTRPCRouter({
                   url: i.fileTitle,
                 },
               })),
-              details: d.DetailList,
+              details: d.DetailList ?? [],
             },
           };
         });

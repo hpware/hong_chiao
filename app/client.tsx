@@ -95,11 +95,11 @@ export default function Client() {
   );
 
   const commonItems = [
-    {
-      name: "申請請假",
-      link: "/leave/new",
-      icon: ArrowRightToLine,
-    },
+    //{
+    //  name: "申請請假",
+    //  link: "/leave/new",
+    //  icon: ArrowRightToLine,
+    //},
     {
       name: "獎學金",
       link: "/credit-application",

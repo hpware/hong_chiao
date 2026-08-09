@@ -7,6 +7,7 @@ import {
 
 export default async function GetCreditApplications(
   browserCookies: BrowserCookieType,
+  objectId: string = "all",
 ) {
   let browser: Browser | undefined;
   let context: BrowserContext | undefined;
@@ -22,6 +23,7 @@ export default async function GetCreditApplications(
 
     const buildURLParams = new URLSearchParams();
     buildURLParams.append("ppqmodel[IsStu]", "1");
+    if (objectId !== "all") buildURLParams.append("ppqmodel[objid]", objectId);
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ userAgent: USER_AGENT });
@@ -37,7 +39,6 @@ export default async function GetCreditApplications(
         },
       },
     );
-
     return JSON.parse(await response.text());
   } finally {
     await context?.close();

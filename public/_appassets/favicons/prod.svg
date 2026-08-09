@@ -1,0 +1,41 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_1_65)">
+<circle cx="64" cy="64" r="64" fill="#356FC7"/>
+<g filter="url(#filter0_n_1_65)">
+<g clip-path="url(#clip1_1_65)">
+<path d="M56.4575 34.2091C54.4572 32.2088 53.3333 29.4956 53.3333 26.6667C53.3333 23.8377 54.4572 21.1246 56.4575 19.1242C58.4579 17.1238 61.171 16 64 16C66.829 16 69.5421 17.1238 71.5425 19.1242C73.5429 21.1246 74.6667 23.8377 74.6667 26.6667C74.6667 29.4956 73.5429 32.2088 71.5425 34.2091C69.5421 36.2095 66.829 37.3333 64 37.3333C61.171 37.3333 58.4579 36.2095 56.4575 34.2091Z" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M93.7909 50.2091C91.7905 48.2087 90.6667 45.4956 90.6667 42.6667C90.6667 39.8377 91.7905 37.1246 93.7909 35.1242C95.7912 33.1238 98.5043 32 101.333 32C104.162 32 106.875 33.1238 108.876 35.1242C110.876 37.1246 112 39.8377 112 42.6667C112 45.4956 110.876 48.2087 108.876 50.2091C106.875 52.2095 104.162 53.3333 101.333 53.3333C98.5043 53.3333 95.7912 52.2095 93.7909 50.2091Z" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19.1242 66.2091C17.1238 64.2087 16 61.4956 16 58.6667C16 55.8377 17.1238 53.1246 19.1242 51.1242C21.1246 49.1238 23.8377 48 26.6667 48C29.4956 48 32.2088 49.1238 34.2091 51.1242C36.2095 53.1246 37.3333 55.8377 37.3333 58.6667C37.3333 61.4956 36.2095 64.2087 34.2091 66.2091C32.2088 68.2095 29.4956 69.3333 26.6667 69.3333C23.8377 69.3333 21.1246 68.2095 19.1242 66.2091Z" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M69.3333 101.333C69.3333 104.162 70.4571 106.875 72.4575 108.876C74.4579 110.876 77.171 112 80 112C82.829 112 85.5421 110.876 87.5425 108.876C89.5428 106.875 90.6666 104.162 90.6666 101.333C90.6666 98.5043 89.5428 95.7912 87.5425 93.7909C85.5421 91.7905 82.829 90.6667 80 90.6667C77.171 90.6667 74.4579 91.7905 72.4575 93.7909C70.4571 95.7912 69.3333 98.5043 69.3333 101.333Z" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M34.6667 50.6667L53.3333 34.6667" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M74.6667 29.3333L90.6667 37.3333" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M98.6667 53.3333L85.3333 90.6667" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M72 93.3333L34.6667 66.6667" stroke="white" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+</g>
+<defs>
+<filter id="filter0_n_1_65" x="0" y="0" width="128" height="128" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feTurbulence type="fractalNoise" baseFrequency="2 2" stitchTiles="stitch" numOctaves="3" result="noise" seed="3098" />
+<feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise" />
+<feComponentTransfer in="alphaNoise" result="coloredNoise1">
+<feFuncA type="discrete" tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "/>
+</feComponentTransfer>
+<feComposite operator="in" in2="shape" in="coloredNoise1" result="noise1Clipped" />
+<feFlood flood-color="rgba(0, 0, 0, 0.25)" result="color1Flood" />
+<feComposite operator="in" in2="noise1Clipped" in="color1Flood" result="color1" />
+<feMerge result="effect1_noise_1_65">
+<feMergeNode in="shape" />
+<feMergeNode in="color1" />
+</feMerge>
+</filter>
+<clipPath id="clip0_1_65">
+<rect width="128" height="128" fill="white"/>
+</clipPath>
+<clipPath id="clip1_1_65">
+<rect width="128" height="128" fill="white"/>
+</clipPath>
+</defs>
+</svg>

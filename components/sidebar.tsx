@@ -38,23 +38,23 @@ import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 
 const navItems = [
-  {
-    title: "請假",
-    items: [
-      {
-        title: "查詢假單",
-        href: "/leave",
-        icon: BinocularsIcon,
-        workInProgress: false,
-      },
-      {
-        title: "申請",
-        href: "/leave/new",
-        icon: PenLine,
-        workInProgress: false,
-      },
-    ],
-  },
+  //{
+  //  title: "請假",
+  //  items: [
+  //    {
+  //      title: "查詢假單",
+  //      href: "/leave",
+  //      icon: BinocularsIcon,
+  //      workInProgress: false,
+  //    },
+  //    {
+  //      title: "申請",
+  //      href: "/leave/new",
+  //      icon: PenLine,
+  //      workInProgress: false,
+  //    },
+  //  ],
+  //},
   {
     title: "獎學金",
     items: [

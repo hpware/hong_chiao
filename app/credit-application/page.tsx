@@ -82,7 +82,7 @@ export default function Page() {
                   )}
                   <Link
                     href="/credit-application/apply/[id]"
-                    as={`/credit-application/apply/${row.original.Code}`}
+                    as={`/credit-application/apply/${row.original.objid}`}
                   >
                     <Button size="sm">申請</Button>
                   </Link>
