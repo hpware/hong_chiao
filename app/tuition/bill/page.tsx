@@ -3,11 +3,10 @@
 import { PDFViewer } from "@embedpdf/react-pdf-viewer";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { useTheme } from "@/components/theme-provider";
 import { useTRPC, useTRPCClient } from "@/trpc/client";
 
-type PdfFile = { url: string; name: string };
+type PdfFile = { blob: Blob; name: string };
 
 export default function Page() {
   const { theme } = useTheme();
@@ -19,27 +18,18 @@ export default function Page() {
       retry: 2,
     }),
   );
-  const [file, setFile] = useState<PdfFile>();
-  const [loading, setLoading] = useState(false);
-  const [downloadError, setDownloadError] = useState<string>();
+  const billId = bill.data?.id;
+  const billName = bill.data?.name ?? "繳費單.pdf";
+  const file = useQuery({
+    queryKey: ["tuition-bill-pdf", billId, billName],
+    enabled: Boolean(billId),
+    queryFn: async ({ signal }) => {
+      if (!billId) throw new Error("找不到繳費單 ID");
 
-  useEffect(() => {
-    return () => {
-      if (file) URL.revokeObjectURL(file.url);
-    };
-  }, [file]);
-
-  async function loadPdf() {
-    if (!bill.data?.id) return;
-
-    setLoading(true);
-    setDownloadError(undefined);
-
-    try {
-      const stream = await trpcClient.tuition.billDownload.query({
-        type: "TuitionBill",
-        id: bill.data.id,
-      });
+      const stream = await trpcClient.tuition.billDownload.query(
+        { type: "TuitionBill", id: billId },
+        { signal },
+      );
       const chunks: Uint8Array[] = [];
 
       for await (const chunk of stream) chunks.push(chunk);
@@ -54,22 +44,26 @@ export default function Page() {
       }
 
       const blob = new Blob([bytes.buffer], { type: "application/pdf" });
-      setFile({
-        url: URL.createObjectURL(blob),
-        name: bill.data.name ?? "繳費單.pdf",
-      });
-      toast.success("繳費單已準備");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "無法取得繳費單";
-      setDownloadError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  }
+      return { blob, name: billName } satisfies PdfFile;
+    },
+  });
+  const [pdfUrl, setPdfUrl] = useState<string>();
+
+  useEffect(() => {
+    if (!file.data) return;
+
+    const url = URL.createObjectURL(file.data.blob);
+    setPdfUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file.data]);
+
+  const loading = Boolean(billId && file.isPending);
 
   return (
-    <main className="space-y-5 p-4">
+    <main className="space-y-5 p-2">
       <header>
         <h1 className="text-xl font-semibold">繳費單</h1>
         <p className="text-sm text-muted-foreground">下載與預覽繳費單</p>
@@ -80,20 +74,20 @@ export default function Page() {
           ? "正在取得繳費單 ID…"
           : loading
             ? "正在串流繳費單…"
-            : "載入繳費單"}
+            : null}
       </span>
 
-      {(bill.error || downloadError) && (
+      {(bill.error || file.error) && (
         <p className="text-sm text-destructive">
-          {downloadError ?? bill.error?.message}
+          {file.error?.message ?? bill.error?.message}
         </p>
       )}
 
-      {file && (
+      {file.data && pdfUrl && (
         <PDFViewer
           className="h-[calc(100vh-20vh)] md:h-[calc(100vh-13vh)]"
           config={{
-            src: file.url,
+            src: pdfUrl,
             disabledCategories: [
               "annotation",
               "form",
@@ -102,7 +96,7 @@ export default function Page() {
               "insert",
             ],
             theme: { preference: theme },
-            export: { defaultFileName: file.name },
+            export: { defaultFileName: file.data.name },
             i18n: { defaultLocale: "zh-TW", fallbackLocale: "en" },
           }}
         />
