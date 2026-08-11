@@ -13,7 +13,7 @@ import {
   UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter, useSearchParams } from "next/navigation";
+import { redirect, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import LoginBG from "./login_bg.jpg";
@@ -34,6 +34,13 @@ export default function Client() {
   const [username, setUsername] = useState("");
   const isExpired = params.get("expired") === "true";
   const prefillUserId = params.get("prefill") === "true";
+  // check login status
+  const { error: updateSessionError, isLoading: updateSessionLoading } =
+    useQuery(
+      trpc.user.renewTimer.queryOptions(undefined, {
+        retry: false,
+      }),
+    );
 
   useEffect(() => {
     if (isExpired) toast.error("登入逾時，請重新登入");
@@ -67,10 +74,11 @@ export default function Client() {
   useEffect(() => {
     if (error === null) return;
     toast.error(
-      `Captcha 錯誤: "${failureReason}" 已重式${failureCount}次，請聯絡伺服器管理員維修此問題！`,
+      `Captcha 錯誤: "${failureReason}" 已重式${failureCount}次，請聯絡主機管理員維修此問題！ (並非學校電算中心!)`,
     );
   }, [error]);
 
+  if (updateSessionError === null && !updateSessionLoading) redirect("/");
   return (
     <>
       {/*bg */}

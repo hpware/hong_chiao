@@ -6,7 +6,7 @@ export { default as ChangePasswordRequest } from "./user/changePassword";
 export { default as RenewTimeoutTimer } from "./user/renewTimeoutTimer";
 
 // bill / discount / reward / tuition
-export { default as GetBill } from "./bill";
+export { default as GetBill } from "./bill/index";
 export { default as GetDiscount } from "./discount";
 export { default as GetReward } from "./reward";
 export { default as GetTuition } from "./tuition";
@@ -18,12 +18,8 @@ export { default as SubmitCertificate } from "./certificate/submit";
 
 // credit-application
 export { default as GetCreditApplications } from "./credit-application";
-export {
-  default as GetCreditApplicationData,
-} from "./credit-application/yourData";
-export {
-  default as SubmitCreditApplication,
-} from "./credit-application/submit";
+export { default as GetCreditApplicationData } from "./credit-application/yourData";
+export { default as SubmitCreditApplication } from "./credit-application/submit";
 
 // home
 export { default as GetAnnouncements } from "./home/announcements";

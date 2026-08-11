@@ -1,8 +1,9 @@
+// 请尽量使用 tRPC 的下載 API。:)
 import GetUserName from "@/components/px_items/user/name";
 import { endpoint, getBrowserCookies } from "@/components/univeralComponents";
 import { getSemesterFromDate } from "@/lib/semester";
 import { NextRequest } from "next/server";
-import GetBill from "@/components/px_items/bill";
+import GetBill from "@/components/px_items/bill/index";
 
 export const GET = async (
   request: NextRequest,

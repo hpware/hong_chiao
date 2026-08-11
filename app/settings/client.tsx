@@ -357,15 +357,19 @@ function ChangeSiteSettingsOnThisDevice() {
           </div>
         </div>
         <div className="flex flex-row space-x-1 items-center">
-          <label className="text-sm flex flex-row space-x-1 items-center">
+          <label
+            htmlFor="ai-bypass-cors"
+            className="text-sm flex flex-row space-x-1 items-center"
+          >
             <WaypointsIcon className="p-1" />
             <span>AI 要求透過伺服器傳送 (建議開啟，避免AI公司阻擋要求)</span>
           </label>
           <Switch
-            name="ai_BypassCors"
+            id="ai-bypass-cors"
+            name="aiBypassCors"
             disabled={preSetDetails.aiDisabled === "true"}
             checked={preSetDetails.aiBypassCors === "true"}
-            onChange={(checked) => {
+            onCheckedChange={(checked) => {
               setPreSetDetails((prev) => ({
                 ...prev,
                 aiBypassCors: checked ? "true" : "false",

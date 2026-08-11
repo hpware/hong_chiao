@@ -38,11 +38,30 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+function getInvalidEnvironmentVariables() {
+  const environmentVariables = [
+    { name: "API_URL", value: process.env.API_URL },
+    { name: "NEXT_PUBLIC_APP_URL", value: process.env.NEXT_PUBLIC_APP_URL },
+    {
+      name: "NEXT_PUBLIC_OWNER_EMAIL",
+      value: process.env.NEXT_PUBLIC_OWNER_EMAIL,
+      placeholder: "changeme@example.com",
+    },
+  ];
+
+  return environmentVariables.flatMap(({ name, value, placeholder }) => {
+    const normalizedValue = value?.trim();
+    return !normalizedValue || normalizedValue === placeholder ? [name] : [];
+  });
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const invalidEnvironmentVariables = getInvalidEnvironmentVariables();
+
   return (
     <html
       lang="zh_Hans"
@@ -61,7 +80,23 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
-          <LayoutClient sidebar={<MainSidebar />}>{children}</LayoutClient>
+          {invalidEnvironmentVariables.length > 0 ? (
+            <main className="absolute inset-0 flex flex-col justify-center items-center gap-3 p-6">
+              <h1 className="text-2xl text-center font-semibold">
+                請更改系統 .env 與聯絡信箱 🙂
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                下列環境變數尚未設定或仍使用預設值：
+              </p>
+              <ul className="list-disc space-y-1 pl-5 font-mono text-sm">
+                {invalidEnvironmentVariables.map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            </main>
+          ) : (
+            <LayoutClient sidebar={<MainSidebar />}>{children}</LayoutClient>
+          )}
           <Toaster />
         </ThemeProvider>
       </body>
