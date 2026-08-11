@@ -10,7 +10,10 @@ import {
 } from "@/components/univeralComponents";
 // pxItems import
 // bill / discount / reward / tuition
-import GetBill from "@/components/px_items/bill";
+
+import GetBill from "@/components/px_items/bill/index";
+import GetBillProof from "@/components/px_items/bill/proof";
+import GetBillDownload from "@/components/px_items/bill/download";
 import GetDiscount from "@/components/px_items/discount";
 import GetReward from "@/components/px_items/reward";
 import GetTuition from "@/components/px_items/tuition";
@@ -653,6 +656,36 @@ export const appRouter = createTRPCRouter({
       );
       return data;
     }),
+    billDownload: baseProcedure
+      .input(z.object({ type: z.enum(["TuitionBill", "Temp"]), id: z.uuid() }))
+      .query(async function* (opts) {
+        const apiUrl = requireApiUrl();
+        const { browserCookies } = await requireBrowserCookies(apiUrl);
+        const response = await GetBillDownload(
+          browserCookies,
+          opts.input.type,
+          `${opts.input.id}.pdf`,
+          opts.signal,
+        );
+
+        if (!response.body) {
+          throw new TRPCError({
+            code: "BAD_GATEWAY",
+            message: "上游沒有回傳檔案。",
+          });
+        }
+
+        const reader = response.body.getReader();
+        try {
+          while (true) {
+            const result = await reader.read();
+            if (result.done) break;
+            yield result.value;
+          }
+        } finally {
+          reader.releaseLock();
+        }
+      }),
   }),
 
   reward: createTRPCRouter({
