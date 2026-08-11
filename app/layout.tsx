@@ -9,6 +9,15 @@ import { ThemeProvider } from "@/components/theme-provider";
 import HeadClient from "./headClient";
 import AiSidebar from "@/components/ai_sidebar";
 
+const schoolName = process.env.NEXT_PUBLIC_SCHOOL_NAME ?? "";
+
+export const metadata: Metadata = {
+  title: {
+    default: `${schoolName}校務系統反代`,
+    template: `%s | ${schoolName}校務系統反代`,
+  },
+};
+
 const themeInitScript = `
 (() => {
   try {
