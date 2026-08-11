@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { readFileSync } from "fs";
 import Link from "next/link";
 import { resolve } from "path";
+
+export const metadata: Metadata = {
+  title: "關於",
+};
 
 function getPackageVersion(pkgPath: string): string {
   try {
