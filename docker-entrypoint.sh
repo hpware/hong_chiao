@@ -17,7 +17,7 @@ check_required API_URL
 check_required NEXT_PUBLIC_APP_URL
 check_required NEXT_PUBLIC_OWNER_EMAIL
 
-if [ "${NEXT_PUBLIC_OWNER_EMAIL:-}" = "changeme@example.com" ]; then
+if [ "$(printf '%s' "${NEXT_PUBLIC_OWNER_EMAIL:-}" | tr -d '[:space:]')" = "changeme@example.com" ]; then
   missing="${missing}NEXT_PUBLIC_OWNER_EMAIL (still set to changeme@example.com)
 "
 fi
