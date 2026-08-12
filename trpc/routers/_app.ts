@@ -981,14 +981,31 @@ export const appRouter = createTRPCRouter({
         });
       }
 
-      const responseText = await RenewTimeoutTimer(browserCookies);
-      if (responseText !== "OK") {
+      const response = await RenewTimeoutTimer(browserCookies);
+      if (response.body === "OK") return { success: true };
+
+      const responsePath = new URL(response.url).pathname.toLowerCase();
+      const isLoginResponse =
+        response.status === 401 ||
+        response.status === 403 ||
+        responsePath.endsWith("/b2kportal/login.aspx");
+
+      if (isLoginResponse) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Session 過期了或無效。請重新登入。",
         });
       }
-      return { success: true };
+
+      console.error("Unexpected renew-timer response", {
+        status: response.status,
+        url: response.url,
+        bodyLength: response.body.length,
+      });
+      throw new TRPCError({
+        code: "BAD_GATEWAY",
+        message: "無法更新 Session，請稍後再試。",
+      });
     }),
     name: baseProcedure.query(async () => {
       const rawUrl = process.env.API_URL;

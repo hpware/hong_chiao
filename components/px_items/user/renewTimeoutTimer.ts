@@ -34,7 +34,11 @@ export default async function RenewTimeoutTimer(
       },
     );
 
-    return await response.text();
+    return {
+      body: (await response.text()).trim(),
+      status: response.status(),
+      url: response.url(),
+    };
   } finally {
     await context?.close();
     await browser?.close();

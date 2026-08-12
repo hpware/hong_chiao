@@ -166,12 +166,25 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
   );
   // On an expired/invalid session the procedure throws UNAUTHORIZED — kick to logout.
   useEffect(() => {
-    if (renewQuery.error?.data?.code === "UNAUTHORIZED") {
+    // The login page uses the same query key and leaves its expected
+    // UNAUTHORIZED result in the cache. Wait for this observer's fresh request
+    // before acting on that cached error, otherwise a successful login can be
+    // followed immediately by an accidental logout.
+    if (
+      renewQuery.isFetchedAfterMount &&
+      !renewQuery.isFetching &&
+      renewQuery.error?.data?.code === "UNAUTHORIZED"
+    ) {
       toast.error("Session 過期 請重新登入");
 
       router.push("/api/auth/logout?prefill=true");
     }
-  }, [renewQuery.error, router]);
+  }, [
+    renewQuery.error,
+    renewQuery.isFetchedAfterMount,
+    renewQuery.isFetching,
+    router,
+  ]);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
