@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const port = Number(process.env.PORT || 3000);
+const port: number = Number(process.env.PORT || 3000);
 const host = "0.0.0.0";
 const outputDirectory = "/tmp/hong-chiao-config-error";
 const outputFile = join(outputDirectory, "index.html");
@@ -11,7 +11,7 @@ const missingParameters = (process.argv[2] || "")
   .map((parameter) => parameter.trim())
   .filter(Boolean);
 
-const escapeHtml = (value) =>
+const escapeHtml = (value: string): string =>
   value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")

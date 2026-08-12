@@ -41,7 +41,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
-COPY scripts/serve-config-error.mjs ./scripts/serve-config-error.mjs
+COPY scripts/serve-config-error.mts ./scripts/serve-config-error.mts
 
 EXPOSE 3000
 

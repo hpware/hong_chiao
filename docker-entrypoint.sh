@@ -26,7 +26,7 @@ fi
 if [ -n "$missing" ]; then
   printf '%s\n' "Missing required configuration:" >&2
   printf '%s' "$missing" >&2
-  exec node scripts/serve-config-error.mjs "$missing"
+  exec node scripts/serve-config-error.mts "$missing"
 fi
 
 exec node server.js
