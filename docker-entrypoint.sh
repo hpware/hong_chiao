@@ -14,7 +14,6 @@ check_required() {
 }
 
 check_required API_URL
-check_required WCFY_API_URL
 check_required NEXT_PUBLIC_APP_URL
 check_required NEXT_PUBLIC_OWNER_EMAIL
 

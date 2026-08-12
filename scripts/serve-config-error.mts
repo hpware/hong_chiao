@@ -27,16 +27,16 @@ const html = `<!doctype html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Missing configuration</title>
+    <title>系統設定錯誤與更改需求</title>
   </head>
   <body>
     <main>
-      <h1>Missing required configuration</h1>
-      <p>The application did not start because these environment variables are missing or invalid:</p>
+      <h1>請更改系統 .env 與聯絡信箱 🙂</h1>
+      <p>Next.js 並未開啟主要是因為伺服器管理員 (可能是你) 缺少了設定以下數值:</p>
       <ul>
         ${items}
       </ul>
-      <p>Set the variables and restart the container.</p>
+      <p>設定完請跑 <code>docker compose up -d</code></p>
     </main>
   </body>
 </html>
@@ -60,7 +60,5 @@ const server = createServer(async (_request, response) => {
 });
 
 server.listen(port, host, () => {
-  console.error(
-    `Configuration error page listening on http://${host}:${port}`,
-  );
+  console.error(`Configuration error page listening on http://${host}:${port}`);
 });
