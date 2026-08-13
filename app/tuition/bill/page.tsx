@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/components/theme-provider";
 import { useTRPC, useTRPCClient } from "@/trpc/client";
+import { LOCAL_EMBEDPDF_CONFIG } from "@/lib/embedpdf";
 
 type PdfFile = { blob: Blob; name: string };
 
@@ -87,6 +88,7 @@ export default function Page() {
         <PDFViewer
           className="h-[calc(100vh-20vh)] md:h-[calc(100vh-13vh)]"
           config={{
+            ...LOCAL_EMBEDPDF_CONFIG,
             src: pdfUrl,
             disabledCategories: [
               "annotation",

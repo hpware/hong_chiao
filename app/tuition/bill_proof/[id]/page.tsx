@@ -6,6 +6,7 @@ import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
 import { PDFViewer } from "@embedpdf/react-pdf-viewer";
 import { useTheme } from "@/components/theme-provider";
+import { LOCAL_EMBEDPDF_CONFIG } from "@/lib/embedpdf";
 
 const BILL_QUERY_TOAST_ID = "tuition-bill-query";
 
@@ -63,6 +64,7 @@ export default function Page() {
           <PDFViewer
             className="h-[calc(100vh-20vh)] md:h-[calc(100vh-13vh)]"
             config={{
+              ...LOCAL_EMBEDPDF_CONFIG,
               src: `/api/downloads/tuition_bill/${data?.id}`,
               disabledCategories: [
                 "annotation",
