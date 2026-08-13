@@ -1,7 +1,7 @@
 import type { PDFViewerConfig } from "@embedpdf/react-pdf-viewer";
 
 export const LOCAL_EMBEDPDF_CONFIG = {
-  wasmUrl: "/vendor/embedpdf/pdfium.wasm",
+  wasmUrl: "/_appassets/vendor/embedpdf/pdfium.wasm",
   fontFallback: null,
   fonts: {
     ui: null,
