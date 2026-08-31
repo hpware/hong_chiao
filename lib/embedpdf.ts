@@ -7,4 +7,11 @@ export const LOCAL_EMBEDPDF_CONFIG = {
     ui: null,
     signature: null,
   },
-} satisfies Pick<PDFViewerConfig, "fontFallback" | "fonts" | "wasmUrl">;
+  stamp: {
+    defaultLibrary: false,
+    manifests: [],
+  },
+} satisfies Pick<
+  PDFViewerConfig,
+  "fontFallback" | "fonts" | "stamp" | "wasmUrl"
+>;

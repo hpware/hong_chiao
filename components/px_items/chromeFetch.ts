@@ -92,19 +92,28 @@ export class ChromeFetchClient {
 
   cookies(url?: string) {
     const parsedUrl = url ? new URL(url) : null;
-    this.cookiesStore = this.cookiesStore.filter(
-      (cookie) => !isExpired(cookie),
-    );
+    const activeCookies: StoredCookie[] = [];
+    const matchingCookies: UpstreamCookies = [];
 
-    return this.cookiesStore
-      .filter(
-        (cookie) =>
-          !parsedUrl ||
-          (domainMatches(parsedUrl.hostname, cookie) &&
-            pathMatches(parsedUrl.pathname, cookie.path) &&
-            (!cookie.secure || parsedUrl.protocol === "https:")),
-      )
-      .map(({ hostOnly: _hostOnly, ...cookie }) => cookie);
+    for (const storedCookie of this.cookiesStore) {
+      if (isExpired(storedCookie)) continue;
+      activeCookies.push(storedCookie);
+
+      if (
+        parsedUrl &&
+        (!domainMatches(parsedUrl.hostname, storedCookie) ||
+          !pathMatches(parsedUrl.pathname, storedCookie.path) ||
+          (storedCookie.secure && parsedUrl.protocol !== "https:"))
+      ) {
+        continue;
+      }
+
+      const { hostOnly: _hostOnly, ...cookie } = storedCookie;
+      matchingCookies.push(cookie);
+    }
+
+    this.cookiesStore = activeCookies;
+    return matchingCookies;
   }
 
   private async fetch(url: string, init: RequestInit) {
