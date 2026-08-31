@@ -9,7 +9,7 @@ function redirectToLogin(request: NextRequest, isExpired = false) {
   const response = NextResponse.redirect(
     new URL(
       `/auth/login${isExpired ? "?expired=true" : ""}`,
-      process.env.NEXT_PUBLIC_APP_URL,
+      process.env.NEXT_PUBLIC_APP_URL || request.url,
     ),
   );
 
@@ -26,7 +26,6 @@ function redirectToLogin(request: NextRequest, isExpired = false) {
     response.cookies.delete(cookieName);
   }
 
-
   return response;
 }
 
@@ -37,12 +36,8 @@ export const GET = async (request: NextRequest) => {
   try {
     const rawUrl = process.env.API_URL;
     if (!rawUrl) {
-      return NextResponse.json(
-        {
-          error:
-            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
-        },
-        { status: 500 },
+      throw new Error(
+        "Cannot log out of the upstream service: API_URL is missing",
       );
     }
     const apiUrl = rawUrl;
