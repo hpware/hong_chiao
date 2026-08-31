@@ -83,6 +83,12 @@ const navItems = [
         workInProgress: true,
       },
       {
+        title: "繳費證明",
+        href: "/tuition/proof-of-payment",
+        icon: ReceiptIcon,
+        workInProgress: false,
+      },
+      {
         title: "抵免申請",
         href: "/tuition/discount",
         icon: DiamondPercentIcon,
