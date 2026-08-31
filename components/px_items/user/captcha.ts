@@ -1,10 +1,9 @@
-import { chromium } from "playwright";
 import { NextResponse } from "next/server";
 import {
-  USER_AGENT,
-  endpoint,
-  type BrowserCookieType,
-} from "@/components/univeralComponents";
+  createChromeFetch,
+  type UpstreamCookies,
+} from "@/components/px_items/chromeFetch";
+import { endpoint } from "@/components/univeralComponents";
 
 type CaptchaResponse = Array<unknown> & {
   1?: {
@@ -13,23 +12,19 @@ type CaptchaResponse = Array<unknown> & {
   };
 };
 export default async function GetCaptchaImage(
-  existingSessionCookie: BrowserCookieType,
+  existingSessionCookie: UpstreamCookies,
 ) {
   const rawUrl = process.env.API_URL;
 
   if (!rawUrl) {
     throw new Error("API_URL is not set.");
   }
-  9;
   const apiUrl = rawUrl;
-  const origin = new URL(apiUrl).origin;
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ userAgent: USER_AGENT });
+  const client = createChromeFetch(existingSessionCookie);
   try {
-    await context.addCookies(existingSessionCookie);
-    await context.request.get(endpoint(apiUrl, "/B2KPortal/Login.aspx"));
+    await client.get(endpoint(apiUrl, "/B2KPortal/Login.aspx"));
 
-    const captchaResponse = await context.request.get(
+    const captchaResponse = await client.get(
       endpoint(apiUrl, "/B2KPortal/Account/CreateValidateCode"),
       {
         headers: {
@@ -46,19 +41,19 @@ export default async function GetCaptchaImage(
       return {
         success: false,
         error: "Captcha endpoint did not return JSON",
-        remoteStatus: captchaResponse.status(),
-        url: captchaResponse.url(),
+        remoteStatus: captchaResponse.status,
+        url: captchaResponse.url,
         bodyPreview: captchaText.slice(0, 200),
         image: null,
         setCookies: [],
       };
     }
-    const browserCookies = await context.cookies();
+    const browserCookies = client.cookies();
     return {
       success: true,
       error: "",
-      remoteStatus: captchaResponse.status(),
-      url: captchaResponse.url(),
+      remoteStatus: captchaResponse.status,
+      url: captchaResponse.url,
       bodyPreview: captchaText.slice(0, 200),
       image: captchaJson[1]?.ImgSrc || null,
       setCookies: browserCookies,
@@ -73,8 +68,5 @@ export default async function GetCaptchaImage(
       image: null,
       setCookies: [],
     };
-  } finally {
-    await context.close();
-    await browser.close();
   }
 }

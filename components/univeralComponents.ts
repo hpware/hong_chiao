@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import type { BrowserContext } from "playwright";
 
 export const authCookieNames = [
   "ASP.NET_SessionId",
@@ -10,9 +9,6 @@ export const authCookieNames = [
   "ssLoginID",
   "ssLoginName",
 ] as const;
-
-export const USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
 
 export function endpoint(apiUrl: string, path: string): string {
   const base = new URL(apiUrl.endsWith("/") ? apiUrl : `${apiUrl}/`);
@@ -153,5 +149,3 @@ export function getHiddenInputValue(html: string, inputName: string) {
 
   return valueMatch?.[1] ?? "";
 }
-
-export type BrowserCookieType = Parameters<BrowserContext["addCookies"]>[0];
