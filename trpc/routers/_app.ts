@@ -31,6 +31,7 @@ import SubmitCreditApplication from "@/components/px_items/credit-application/su
 import GetAnnouncements from "@/components/px_items/home/announcements";
 import GetHomeData from "@/components/px_items/home/data";
 import GetFeatures from "@/components/px_items/home/features";
+import FetchUserSemisters from "@/components/px_items/fetch_user_semis";
 
 // leave stuff
 import {
@@ -584,6 +585,28 @@ export const appRouter = createTRPCRouter({
 
         return data;
       }),
+    getBatches: baseProcedure
+      .input(z.array(z.object({ year: z.number(), semistry: z.number() })))
+      .query(async function* (opts) {
+        const apiUrl = requireApiUrl();
+        const { browserCookies } = await requireBrowserCookies(apiUrl);
+
+        for (const i of opts.input) {
+          const req = await GetTuition(
+            browserCookies,
+            String(i.year),
+            String(i.semistry),
+          );
+
+          if (!req.success && req.message === null) throwUnauthorized();
+
+          yield {
+            year: i.year,
+            semistry: i.semistry,
+            details: req.data?.details ?? null,
+          };
+        }
+      }),
     discount: createTRPCRouter({
       get: baseProcedure.query(async () => {
         const apiUrl = requireApiUrl();
@@ -1097,6 +1120,43 @@ export const appRouter = createTRPCRouter({
         //錯誤: -clXObjS.SBAS:-clYObjS_BAS.BASSaveUserRole:-SBAS_SaveUserRole:新密碼與前兩代密碼重複，請重新設定新密碼。
         // nukr -:
       }),
+    participatingSemis: baseProcedure.query(async () => {
+      //
+      const rawUrl = process.env.API_URL;
+
+      if (!rawUrl) {
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message:
+            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+        });
+      }
+      const apiUrl = rawUrl;
+      const url = new URL(apiUrl);
+      const cookieStore = await cookies();
+      let browserCookies;
+      try {
+        browserCookies = await getBrowserCookies(cookieStore, url);
+      } catch {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Session 過期了或無效。請重新登入。",
+        });
+      }
+      const startTime = Date.now();
+      let getData;
+      try {
+        getData = await FetchUserSemisters(browserCookies);
+      } catch (e) {
+        throwUnauthorized();
+      }
+
+      return {
+        data: getData,
+        error: null,
+        duration: Date.now() - startTime,
+      };
+    }),
   }),
   // 幫瀏覽器轉發 OpenAI 格式的聊天要求，避免被 CORS 阻擋；
   // 用 async generator 把上游的 SSE chunk 一路串流回前端

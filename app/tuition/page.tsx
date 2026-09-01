@@ -29,11 +29,21 @@ export default function Page() {
     sem: number;
   }>(getSemesterFromDate);
   const trpc = useTRPC();
+  const {
+    data: participatingSemis,
+    isPending: isLoadingParticipatingSemis,
+    isError: isErrorParticipatingSemis,
+    isSuccess: isSuccessParticipatingSemis,
+  } = useQuery(trpc.user.participatingSemis.queryOptions());
   const { data, isPending, isError } = useQuery(
-    trpc.tuition.get.queryOptions({
-      year: requestType.year,
-      semistry: requestType.sem,
-    }),
+    trpc.tuition.getBatches.queryOptions(
+      participatingSemis?.data.map((i) => {
+        return { year: Number(i.year), semistry: Number(i.semi) };
+      }) || [{ year: requestType.year, semistry: requestType.sem }],
+      {
+        enabled: isSuccessParticipatingSemis,
+      },
+    ),
   );
 
   const details = data?.data?.details;
@@ -124,41 +134,6 @@ export default function Page() {
                     config={{
                       抵免: { label: "抵免", color: "blue" },
                       待繳: { label: "待繳", color: "orange" },
-                    }}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={0.55}
-                    bloom="low"
-                  >
-                    <Pie variant="gradient" />
-                    <Legend />
-                    <Tooltip
-                      valueFormatter={(value) => value.toLocaleString("zh-TW")}
-                    />
-                  </PieChart>
-                </div>
-              ) : (
-                <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-                  沒有可繪製的金額資料
-                </div>
-              )}
-            </section>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
-            <section className="rounded-xl border bg-card p-4">
-              <div className="mb-2">
-                <h2 className="font-medium">繳費進度</h2>
-                <p className="text-xs text-muted-foreground">
-                  已收金額與尚待繳納金額
-                </p>
-              </div>
-              {duePaidChart.length > 0 ? (
-                <div className="h-64">
-                  <PieChart
-                    data={duePaidChart}
-                    config={{
-                      已收: { label: "已收", color: "green" },
-                      待收: { label: "待收", color: "orange" },
                     }}
                     dataKey="value"
                     nameKey="name"
