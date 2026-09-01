@@ -10,6 +10,7 @@ import {
   paintColumn,
   prefersReducedMotion,
 } from "./dither-paint"
+import { useIsDark } from "./use-is-dark"
 
 type Bars = { top: number[]; base: number[] } // per data index, in backing rows
 
@@ -189,7 +190,8 @@ export function BarCanvas() {
   const bloomActive = ctx.bloomOnHover
     ? ctx.isMouseInChart || ctx.hovered
     : true
-  const bloom = bloomLayerStyle(ctx.bloom, bloomActive)
+  const isDark = useIsDark()
+  const bloom = bloomLayerStyle(ctx.bloom, bloomActive, isDark)
   const pos = {
     left: ctx.margins.left,
     top: ctx.margins.top,

@@ -1,21 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import {
-  Legend,
-  Pie,
-  PieChart,
-  Tooltip,
-  type ChartConfig,
-} from "@/components/dither-kit";
-import { Input } from "@/components/ui/input";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
-import { getSemesterFromDate } from "@/lib/semester";
+import { skipToken, useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { Legend, Pie, PieChart, Tooltip } from "@/components/dither-kit";
 import { useTRPC } from "@/trpc/client";
+import type { AppRouter } from "@/trpc/routers/_app";
+import type { inferRouterOutputs } from "@trpc/server";
+
+// getBatches resolves with an async generator, so the router output is the
+// generator itself — unwrap it to the type of a single yielded semester.
+type TuitionBatch = inferRouterOutputs<AppRouter>["tuition"]["getBatches"];
+type TuitionEntry =
+  TuitionBatch extends AsyncGenerator<infer TYield> ? TYield : never;
 
 function parseAmount(value: string | undefined) {
   const normalized = value?.replaceAll(",", "").replace(/[^\d.-]/g, "");
@@ -23,41 +19,22 @@ function parseAmount(value: string | undefined) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-export default function Page() {
-  const [requestType, setRequestType] = useState<{
-    year: number;
-    sem: number;
-  }>(getSemesterFromDate);
-  const trpc = useTRPC();
-  const {
-    data: participatingSemis,
-    isPending: isLoadingParticipatingSemis,
-    isError: isErrorParticipatingSemis,
-    isSuccess: isSuccessParticipatingSemis,
-  } = useQuery(trpc.user.participatingSemis.queryOptions());
-  const { data, isPending, isError } = useQuery(
-    trpc.tuition.getBatches.queryOptions(
-      participatingSemis?.data.map((i) => {
-        return { year: Number(i.year), semistry: Number(i.semi) };
-      }) || [{ year: requestType.year, semistry: requestType.sem }],
-      {
-        enabled: isSuccessParticipatingSemis,
-      },
-    ),
-  );
+const semesterNames: Record<number, string> = { 1: "第一學期", 2: "第二學期" };
 
-  const details = data?.data?.details;
-  const duePaidChart = useMemo(() => {
-    const due = Math.max(0, parseAmount(details?.due));
-    const paid = Math.max(0, parseAmount(details?.paid));
-    const collected = due > 0 ? Math.min(paid, due) : paid;
-    const remaining = Math.max(0, due - paid);
+function formatSemester(year: number, semistry: number) {
+  return `${year} 學年度 ${semesterNames[semistry] ?? `第 ${semistry} 學期`}`;
+}
 
-    return [
-      { name: "已收", value: collected },
-      { name: "待收", value: remaining },
-    ].filter((item) => item.value > 0);
-  }, [details?.due, details?.paid]);
+function SemesterCard(props: {
+  year: number;
+  semistry: number;
+  entry: TuitionEntry | undefined;
+  isStreaming: boolean;
+}) {
+  const { year, semistry, entry, isStreaming } = props;
+  const details = entry?.details;
+  // Amounts arrive as scraped strings ("12,345"), so compare them as numbers.
+  const outstanding = parseAmount(details?.due) - parseAmount(details?.paid);
 
   const detailedChart = useMemo(() => {
     const discounts = Math.max(0, parseAmount(details?.discounts));
@@ -66,7 +43,97 @@ export default function Page() {
       { name: "抵免", value: discounts },
       { name: "待繳", value: requiredToPay },
     ].filter((item) => item.value > 0);
-  }, [details?.due, details?.due]);
+  }, [details?.discounts, details?.due]);
+
+  return (
+    <section className="rounded-xl border bg-card p-4">
+      <div className="mb-2">
+        <h2 className="font-medium">{formatSemester(year, semistry)}</h2>
+        <p className="text-xs text-muted-foreground">已抵免與尚待繳納金額</p>
+        {details ? (
+          <p
+            className={`text-xs ${outstanding == 0 ? "text-muted-foreground" : "text-red-700 dark:text-red-300"}`}
+          >
+            {outstanding == 0
+              ? "已付清"
+              : `尚欠 ${outstanding.toLocaleString("zh-TW")}`}
+          </p>
+        ) : null}
+      </div>
+      {/* Rows render before their chunk arrives, so an entry we haven't been
+          handed yet is still loading rather than empty. */}
+      {!entry && isStreaming ? (
+        <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+          載入中...
+        </div>
+      ) : !details ? (
+        <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+          查無學雜費資訊
+        </div>
+      ) : detailedChart.length > 0 ? (
+        <div className="h-64">
+          <PieChart
+            data={detailedChart}
+            config={{
+              抵免: { label: "抵免", color: "blue" },
+              待繳: { label: "待繳", color: "orange" },
+            }}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={0.55}
+            bloom="low"
+          >
+            <Pie variant="gradient" />
+            <Legend />
+            <Tooltip
+              valueFormatter={(value) => value.toLocaleString("zh-TW")}
+            />
+          </PieChart>
+        </div>
+      ) : (
+        <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+          沒有可繪製的金額資料
+        </div>
+      )}
+    </section>
+  );
+}
+
+export default function Page() {
+  const trpc = useTRPC();
+  const {
+    data: participatingSemis,
+    isPending: isLoadingParticipatingSemis,
+    isError: isErrorParticipatingSemis,
+  } = useQuery(trpc.user.participatingSemis.queryOptions());
+
+  const semesters = participatingSemis?.data;
+  const { data, isFetching, isError } = useQuery(
+    trpc.tuition.getBatches.queryOptions(
+      semesters
+        ? semesters.map((i) => ({
+            year: Number(i.year),
+            semistry: Number(i.semi),
+          }))
+        : skipToken,
+    ),
+  );
+  // Drive the list off the requested semesters, not off `data` — that way every
+  // row is on screen immediately and fills in as its chunk streams back.
+  const rows = (semesters ?? [])
+    .map((i) => {
+      const year = Number(i.year);
+      const semistry = Number(i.semi);
+      return {
+        year,
+        semistry,
+        entry: data?.find(
+          (entry) => entry.year === year && entry.semistry === semistry,
+        ),
+      };
+    })
+    // Newest semester first.
+    .sort((a, b) => b.year - a.year || b.semistry - a.semistry);
 
   return (
     <main className="space-y-5 p-4">
@@ -77,88 +144,24 @@ export default function Page() {
         </p>
       </header>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <label className="grid gap-1 text-sm" htmlFor="tuition-year">
-          學年
-          <Input
-            id="tuition-year"
-            className="w-24 tabular-nums"
-            type="number"
-            value={requestType.year}
-            onChange={(event) =>
-              setRequestType((current) => ({
-                ...current,
-                year: Number(event.target.value),
-              }))
-            }
-          />
-        </label>
-        <label className="grid gap-1 text-sm" htmlFor="tuition-semester">
-          學期
-          <NativeSelect
-            id="tuition-semester"
-            value={requestType.sem}
-            onChange={(event) =>
-              setRequestType((current) => ({
-                ...current,
-                sem: Number(event.target.value),
-              }))
-            }
-          >
-            <NativeSelectOption value={1}>第一學期</NativeSelectOption>
-            <NativeSelectOption value={2}>第二學期</NativeSelectOption>
-          </NativeSelect>
-        </label>
-      </div>
-
-      {isPending ? (
+      {isLoadingParticipatingSemis ? (
         <p className="text-sm text-muted-foreground">載入中...</p>
-      ) : isError ? (
+      ) : isError || isErrorParticipatingSemis ? (
         <p className="text-sm text-destructive">無法取得學費資訊。</p>
-      ) : details ? (
-        <div className="space-y-4 flex">
-          <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
-            <section className="rounded-xl border bg-card p-4">
-              <div className="mb-2">
-                <h2 className="font-medium">金額</h2>
-                <p className="text-xs text-muted-foreground">
-                  已收金額與尚待繳納金額
-                </p>
-              </div>
-              {detailedChart.length > 0 ? (
-                <div className="h-64">
-                  <PieChart
-                    data={detailedChart}
-                    /*      { name: "抵免", value: discounts },
-                        { name: "待繳", value: requiredToPay }, */
-                    config={{
-                      抵免: { label: "抵免", color: "blue" },
-                      待繳: { label: "待繳", color: "orange" },
-                    }}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={0.55}
-                    bloom="low"
-                  >
-                    <Pie variant="gradient" />
-                    <Legend />
-                    <Tooltip
-                      valueFormatter={(value) => value.toLocaleString("zh-TW")}
-                    />
-                  </PieChart>
-                </div>
-              ) : (
-                <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-                  沒有可繪製的金額資料
-                </div>
-              )}
-            </section>
-          </div>
+      ) : rows.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {rows.map((row) => (
+            <SemesterCard
+              key={`${row.year}-${row.semistry}`}
+              year={row.year}
+              semistry={row.semistry}
+              entry={row.entry}
+              isStreaming={isFetching}
+            />
+          ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          {data?.message ?? "查無學費資訊。"}
-        </p>
+        <p className="text-sm text-muted-foreground">查無學費資訊。</p>
       )}
     </main>
   );

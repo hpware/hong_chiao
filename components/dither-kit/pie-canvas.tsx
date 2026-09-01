@@ -9,6 +9,7 @@ import {
   OFF_TIER,
   prefersReducedMotion,
 } from "./dither-paint"
+import { useIsDark } from "./use-is-dark"
 import { rgb } from "./palette"
 import { sliceAtAngle } from "./polar"
 import { usePolarChart } from "./polar-context"
@@ -190,9 +191,11 @@ export function PieCanvas() {
     return () => cancelAnimationFrame(raf)
   }, [cols, rows, width, height])
 
+  const isDark = useIsDark()
   const bloom = bloomLayerStyle(
     ctx.bloom,
-    ctx.bloomOnHover ? ctx.isMouseInChart : true
+    ctx.bloomOnHover ? ctx.isMouseInChart : true,
+    isDark
   )
   const pos = {
     left: ctx.margins.left,

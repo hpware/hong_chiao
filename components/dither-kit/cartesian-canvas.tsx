@@ -10,6 +10,7 @@ import {
   prefersReducedMotion,
   resample,
 } from "./dither-paint"
+import { useIsDark } from "./use-is-dark"
 import { rgb } from "./palette"
 
 type Star = { key: string; xi: number; depth: number; phase: number }
@@ -365,7 +366,8 @@ export function CartesianCanvas() {
   const bloomActive = ctx.bloomOnHover
     ? ctx.isMouseInChart || ctx.hovered
     : true
-  const bloom = bloomLayerStyle(ctx.bloom, bloomActive)
+  const isDark = useIsDark()
+  const bloom = bloomLayerStyle(ctx.bloom, bloomActive, isDark)
   const pos = {
     left: ctx.margins.left,
     top: ctx.margins.top,

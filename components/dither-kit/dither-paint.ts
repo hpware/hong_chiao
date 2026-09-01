@@ -122,7 +122,7 @@ export function backingSize(width: number, height: number) {
 // hue blooms in its own colour instead of a grey wash. Lives on a second canvas
 // layered over the crisp one (which stays sharp/pixelated).
 export type BloomLevel = "off" | "low" | "high" | "aura"
-export type BloomBlend = "plus-lighter" | "screen" | "lighten"
+export type BloomBlend = "plus-lighter" | "screen" | "lighten" | "multiply"
 export type BloomConfig = {
   blur: number // px
   brightness: number // 1 = none
@@ -148,17 +148,31 @@ export type BloomStyle = {
   imageRendering: "auto"
 }
 
+// On a light background an additive glow has nowhere to go but toward white,
+// so the hue clips out to its most saturated corner — blue turns cyan, orange
+// turns yellow. Light mode instead blooms *inward* with `multiply`, at a lower
+// brightness, which reads as a soft halo rather than a blown-out neon ring.
+const LIGHT_PRESET: Record<Exclude<BloomLevel, "off">, BloomConfig> = {
+  low: { blur: 3, brightness: 1, opacity: 0.25, saturate: 1.1, blend: "multiply" },
+  high: { blur: 5, brightness: 1, opacity: 0.32, saturate: 1.15, blend: "multiply" },
+  aura: { blur: 15, brightness: 1, opacity: 0.12, saturate: 1.2, blend: "multiply" },
+}
+
 /** Style for the bloom *layer* canvas (a blurred, additive copy). null when off. */
 export function bloomLayerStyle(
   input: BloomInput,
-  active: boolean
+  active: boolean,
+  isDark = true
 ): BloomStyle | null {
   if (!active || input === "off") return null
-  const cfg = typeof input === "string" ? PRESET[input] : input
+  // An explicit config is taken at face value; only the presets are re-tuned,
+  // since a caller passing raw numbers has already chosen its own look.
+  const cfg =
+    typeof input === "string" ? (isDark ? PRESET : LIGHT_PRESET)[input] : input
   return {
     filter: `blur(${cfg.blur}px) brightness(${cfg.brightness}) saturate(${cfg.saturate ?? 1})`,
     opacity: cfg.opacity,
-    mixBlendMode: cfg.blend ?? "plus-lighter",
+    mixBlendMode: cfg.blend ?? (isDark ? "plus-lighter" : "multiply"),
     imageRendering: "auto",
   }
 }
