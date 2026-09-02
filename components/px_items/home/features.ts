@@ -1,19 +1,19 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import {
-  USER_AGENT,
-  endpoint,
-  type BrowserCookieType,
-} from "@/components/univeralComponents";
+  createChromeFetch,
+  type ChromeFetchClient,
+  type UpstreamCookies,
+} from "@/components/px_items/chromeFetch";
+import { endpoint } from "@/components/univeralComponents";
 
 type Feature = {
   name: string;
-  requireBrowser: boolean;
-  requestComponent: (context: BrowserContext) => Promise<boolean>;
+  requiresRequest: boolean;
+  requestComponent: (client: ChromeFetchClient) => Promise<boolean>;
   isEnabled: boolean;
 };
 
 export default async function GetFeatures(
-  browserCookies: BrowserCookieType,
+  browserCookies: UpstreamCookies,
   feature?: string,
 ) {
   const apiUrl = process.env.API_URL;
@@ -27,11 +27,11 @@ export default async function GetFeatures(
   const featureList: Feature[] = [
     {
       name: "discount",
-      requireBrowser: true,
-      requestComponent: async (context) => {
+      requiresRequest: true,
+      requestComponent: async (client) => {
         const buildURLParams = new URLSearchParams();
         buildURLParams.append("Qmodel", "");
-        const response = await context.request.post(
+        const response = await client.post(
           endpoint(apiUrl, "/YSJStu/YSJSTU/YSJSTU_QryNotify"),
           {
             data: buildURLParams.toString(),
@@ -60,11 +60,10 @@ export default async function GetFeatures(
       : featureList;
   const missingFeatures =
     featureSelection?.filter(
-      (item) =>
-        !featureList.some((featureItem) => featureItem.name === item),
+      (item) => !featureList.some((featureItem) => featureItem.name === item),
     ) ?? [];
 
-  if (!selectedFeatures.some((item) => item.requireBrowser)) {
+  if (!selectedFeatures.some((item) => item.requiresRequest)) {
     return {
       missingFeatures,
       data: selectedFeatures.map((item) => ({
@@ -74,31 +73,19 @@ export default async function GetFeatures(
     };
   }
 
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
+  const client = createChromeFetch(browserCookies);
 
-  try {
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    const browserContext = context;
-    await browserContext.addCookies(browserCookies);
-
-    return {
-      missingFeatures,
-      data: await Promise.all(
-        selectedFeatures.map(async (item) => {
-          if (!item.isEnabled) return { name: item.name, disabled: true };
-          if (!item.requireBrowser)
-            return { name: item.name, disabled: false };
-          return {
-            name: item.name,
-            disabled: await item.requestComponent(browserContext),
-          };
-        }),
-      ),
-    };
-  } finally {
-    await context?.close();
-    await browser?.close();
-  }
+  return {
+    missingFeatures,
+    data: await Promise.all(
+      selectedFeatures.map(async (item) => {
+        if (!item.isEnabled) return { name: item.name, disabled: true };
+        if (!item.requiresRequest) return { name: item.name, disabled: false };
+        return {
+          name: item.name,
+          disabled: await item.requestComponent(client),
+        };
+      }),
+    ),
+  };
 }

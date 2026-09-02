@@ -4,28 +4,19 @@ import LogoutRemote from "@/components/px_items/user/logout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const logoutCookieNames = [...authCookieNames, "ssLoginForLDAP"] as const;
 
 function redirectToLogin(request: NextRequest, isExpired = false) {
   const response = NextResponse.redirect(
     new URL(
       `/auth/login${isExpired ? "?expired=true" : ""}`,
-      process.env.NEXT_PUBLIC_APP_URL,
+      process.env.NEXT_PUBLIC_APP_URL || request.url,
     ),
   );
 
-  for (const cookieName of [
-    "ASP.NET_SessionId",
-    "ssClientIP",
-    "ssAID",
-    "ssSchID",
-    "ssSchName",
-    "ssLoginID",
-    "ssLoginForLDAP",
-    "ssLoginName",
-  ]) {
+  for (const cookieName of logoutCookieNames) {
     response.cookies.delete(cookieName);
   }
-
 
   return response;
 }
@@ -37,34 +28,32 @@ export const GET = async (request: NextRequest) => {
   try {
     const rawUrl = process.env.API_URL;
     if (!rawUrl) {
-      return NextResponse.json(
-        {
-          error:
-            "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
-        },
-        { status: 500 },
+      throw new Error(
+        "Cannot log out of the upstream service: API_URL is missing",
       );
     }
     const apiUrl = rawUrl;
     const url = new URL(apiUrl);
-    const browserCookies = authCookieNames.map((cookieName) => {
+    const browserCookies = authCookieNames.flatMap((cookieName) => {
       const value = request.cookies.get(cookieName)?.value;
 
       if (value === undefined) {
-        throw new Error(`No session found: missing ${cookieName}`);
+        return [];
       }
 
-      return {
-        name: cookieName,
-        value,
-        domain: url.hostname,
-        path: "/",
-        secure: url.protocol === "https:",
-        sameSite: "Lax" as const,
-      };
+      return [
+        {
+          name: cookieName,
+          value,
+          domain: url.hostname,
+          path: "/",
+          secure: url.protocol === "https:",
+          sameSite: "Lax" as const,
+        },
+      ];
     });
 
-    await LogoutRemote(browserCookies);
+    if (browserCookies.length > 0) await LogoutRemote(browserCookies);
     return redirectToLogin(request, isExpired);
   } catch (error: unknown) {
     console.error(error);
