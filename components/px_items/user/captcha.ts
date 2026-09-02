@@ -22,10 +22,7 @@ export default async function GetCaptchaImage(
   const apiUrl = rawUrl;
   const client = createChromeFetch(existingSessionCookie);
   try {
-    const warmUpResponse = await client.get(
-      endpoint(apiUrl, "/B2KPortal/Login.aspx"),
-    );
-    await client.discard(warmUpResponse);
+    await client.get(endpoint(apiUrl, "/B2KPortal/Login.aspx"));
 
     const captchaResponse = await client.get(
       endpoint(apiUrl, "/B2KPortal/Account/CreateValidateCode"),

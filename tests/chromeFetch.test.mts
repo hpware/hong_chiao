@@ -42,12 +42,16 @@ test("discard cancels an unread response body", async () => {
   assert.equal(cancelled, true);
 });
 
-test("discard prevents unread network bodies from accumulating sockets", async () => {
+test("ignoring a get()/post() result does not accumulate sockets", async () => {
   const openSockets = new Set<object>();
   let peakOpenSockets = 0;
+  const payload = "x".repeat(256 * 1024);
   const server = createServer((_request, response) => {
-    response.writeHead(200, { "Content-Length": "1000000" });
-    response.write("x");
+    response.writeHead(200, {
+      "Content-Type": "text/html",
+      "Content-Length": String(payload.length),
+    });
+    response.end(payload);
   });
   server.on("connection", (socket) => {
     openSockets.add(socket);
@@ -64,8 +68,9 @@ test("discard prevents unread network bodies from accumulating sockets", async (
     if (!address || typeof address === "string") return;
     for (let request = 0; request < 12; request += 1) {
       const client = createChromeFetch();
-      const response = await client.get(`http://127.0.0.1:${address.port}/`);
-      await client.discard(response);
+      // Deliberately ignore the result: this is the shape that used to leak a
+      // socket per call, and must now be safe without any caller discipline.
+      await client.get(`http://127.0.0.1:${address.port}/`);
     }
 
     assert.ok(
@@ -226,6 +231,42 @@ test("requests abort after the configured timeout", async () => {
     await assert.rejects(client.get("https://school.edu.tw/hangs"), {
       name: "TimeoutError",
     });
+  } finally {
+    mocked.restore();
+  }
+});
+
+test("stream() hands back a raw body the caller can pipe", async () => {
+  const mocked = mockFetch(() => new Response("%PDF-1.7 payload"));
+
+  try {
+    const response = await createChromeFetch().stream(
+      "https://portal.school.edu.tw/YMR_Stu/YMR/DownLoad",
+      { method: "POST", data: "FileId=abc" },
+    );
+
+    // Unlike get()/post(), the body is still unread and streamable.
+    assert.equal(response instanceof Response, true);
+    assert.equal(response.bodyUsed, false);
+    assert.notEqual(response.body, null);
+    assert.equal(mocked.calls[0]?.init.method, "POST");
+    assert.equal(await response.text(), "%PDF-1.7 payload");
+  } finally {
+    mocked.restore();
+  }
+});
+
+test("get() exposes a buffered body that can be read more than once", async () => {
+  const mocked = mockFetch(() => new Response('{"IsOK":true}'));
+
+  try {
+    const response = await createChromeFetch().get(
+      "https://portal.school.edu.tw/api",
+    );
+
+    assert.equal(await response.text(), '{"IsOK":true}');
+    assert.deepEqual(await response.json(), { IsOK: true });
+    assert.equal((await response.arrayBuffer()).byteLength, 13);
   } finally {
     mocked.restore();
   }

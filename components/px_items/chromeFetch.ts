@@ -94,6 +94,48 @@ function redirectReferer(previousUrl: URL, nextUrl: URL) {
     : `${previousUrl.origin}/`;
 }
 
+/**
+ * A response whose body has already been read off the socket.
+ *
+ * `get`/`post` return this instead of a raw `Response` so that ignoring the
+ * result cannot leak a connection: undici keeps a socket checked out of the
+ * pool until the body is read or cancelled, and Playwright used to hide that
+ * by tearing down a browser process per call. Buffering up front makes the
+ * safe thing the default; `ChromeFetchClient.stream` is the opt-in escape
+ * hatch for callers that genuinely need to pipe the body onward.
+ */
+export class ChromeFetchResponse {
+  readonly status: number;
+  readonly statusText: string;
+  readonly ok: boolean;
+  readonly url: string;
+  readonly headers: Headers;
+  private readonly buffer: ArrayBuffer;
+  private decoded?: string;
+
+  constructor(response: Response, buffer: ArrayBuffer) {
+    this.status = response.status;
+    this.statusText = response.statusText;
+    this.ok = response.ok;
+    this.url = response.url;
+    this.headers = response.headers;
+    this.buffer = buffer;
+  }
+
+  async arrayBuffer() {
+    return this.buffer;
+  }
+
+  async text() {
+    this.decoded ??= new TextDecoder().decode(this.buffer);
+    return this.decoded;
+  }
+
+  async json() {
+    return JSON.parse(await this.text());
+  }
+}
+
 export class ChromeFetchClient {
   private cookiesStore: StoredCookie[];
   private requestTimeoutMs: number;
@@ -108,17 +150,30 @@ export class ChromeFetchClient {
     this.requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
   }
 
-  get(url: string, options: Omit<RequestOptions, "data"> = {}) {
-    return this.fetch(url, { ...options, method: "GET" });
+  async get(url: string, options: Omit<RequestOptions, "data"> = {}) {
+    return this.buffered(await this.fetch(url, { ...options, method: "GET" }));
   }
 
-  post(url: string, options: RequestOptions = {}) {
+  async post(url: string, options: RequestOptions = {}) {
     const { data, ...init } = options;
-    return this.fetch(url, {
-      ...init,
-      method: "POST",
-      body: data,
-    });
+    return this.buffered(
+      await this.fetch(url, { ...init, method: "POST", body: data }),
+    );
+  }
+
+  /**
+   * Perform a request and hand back the raw streaming `Response`.
+   *
+   * The caller then owns the body and MUST either consume it or pass it to
+   * `discard`. Only use this to pipe a body straight through to the client
+   * (see `bill/download.ts`); prefer `get`/`post` everywhere else.
+   */
+  stream(
+    url: string,
+    options: RequestOptions & { method?: "GET" | "POST" } = {},
+  ) {
+    const { data, method = "GET", ...init } = options;
+    return this.fetch(url, { ...init, method, body: data });
   }
 
   cookies(url?: string) {
@@ -147,8 +202,14 @@ export class ChromeFetchClient {
     return matchingCookies;
   }
 
+  /** Release a streaming response the caller has decided not to read. */
   async discard(response: Response) {
     await response.body?.cancel();
+  }
+
+  /** Drain a response onto the heap so its socket returns to the pool. */
+  private async buffered(response: Response) {
+    return new ChromeFetchResponse(response, await response.arrayBuffer());
   }
 
   private async fetch(url: string, init: RequestInit) {

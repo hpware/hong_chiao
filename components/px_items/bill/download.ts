@@ -27,7 +27,6 @@ export default async function GetBill(
     endpoint(apiUrl, "/YMR_Stu/YMR/StuPayCertifyDownLoad"),
   );
   if (!fetchRequestVerificationToken.ok) {
-    await client.discard(fetchRequestVerificationToken);
     throw new Error(
       `無法取得下載驗證資訊：${fetchRequestVerificationToken.status}`,
     );
@@ -51,8 +50,9 @@ export default async function GetBill(
   );
 
   const downloadUrl = endpoint(apiUrl, "/YMR_Stu/YMR/DownLoad");
-  const response = await client.post(downloadUrl, {
+  const response = await client.stream(downloadUrl, {
     cache: "no-store",
+    method: "POST",
     data: buildURLParams,
     signal,
     headers: {

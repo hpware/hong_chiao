@@ -68,7 +68,6 @@ export default async function GetBillProof(
     },
   );
   if (!response.ok) {
-    await client.discard(response);
     throw new Error(`遠端伺服器錯誤（${response.status}）`);
   }
 
