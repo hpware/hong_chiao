@@ -1,3 +1,5 @@
+import { Agent, type Dispatcher } from "undici";
+
 export type UpstreamCookie = {
   name: string;
   value: string;
@@ -25,8 +27,25 @@ type ChromeFetchOptions = {
 
 const MAX_REDIRECTS = 20;
 const REQUEST_TIMEOUT_MS = 30_000;
+const UPSTREAM_CONNECTIONS = 32;
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
+
+// One process-wide pool lets separate API requests and users reuse warm TLS
+// connections. The cap still allows bursts to run concurrently without an
+// unbounded number of clients overwhelming the upstream school system.
+const upstreamDispatcher = new Agent({
+  allowH2: true,
+  connections: UPSTREAM_CONNECTIONS,
+  connectTimeout: 10_000,
+  keepAliveTimeout: 60_000,
+  keepAliveMaxTimeout: 10 * 60_000,
+  pipelining: 1,
+});
+
+type NodeRequestInit = RequestInit & {
+  dispatcher: Dispatcher;
+};
 
 function defaultCookiePath(pathname: string) {
   const lastSlash = pathname.lastIndexOf("/");
@@ -241,14 +260,16 @@ export class ChromeFetchClient {
       if (cookieHeader) headers.set("Cookie", cookieHeader);
       else headers.delete("Cookie");
 
-      const response = await fetch(currentUrl, {
+      const requestInit: NodeRequestInit = {
         ...init,
         body,
+        dispatcher: upstreamDispatcher,
         headers,
         method,
         redirect: "manual",
         signal,
-      });
+      };
+      const response = await fetch(currentUrl, requestInit);
       await this.storeResponseCookies(response, currentUrl);
 
       const location = response.headers.get("location");

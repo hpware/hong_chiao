@@ -85,6 +85,48 @@ test("ignoring a get()/post() result does not accumulate sockets", async () => {
   }
 });
 
+test("separate clients dispatch upstream requests concurrently", async () => {
+  let activeRequests = 0;
+  let peakActiveRequests = 0;
+  const server = createServer((_request, response) => {
+    activeRequests += 1;
+    peakActiveRequests = Math.max(peakActiveRequests, activeRequests);
+
+    setTimeout(() => {
+      activeRequests -= 1;
+      response.end("done");
+    }, 40);
+  });
+
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.notEqual(address, null);
+  assert.equal(typeof address, "object");
+
+  try {
+    if (!address || typeof address === "string") return;
+    await Promise.all(
+      Array.from({ length: 48 }, () =>
+        createChromeFetch().get(`http://127.0.0.1:${address.port}/`),
+      ),
+    );
+
+    assert.ok(
+      peakActiveRequests >= 16,
+      `expected concurrent requests, saw only ${peakActiveRequests}`,
+    );
+    assert.ok(
+      peakActiveRequests <= 32,
+      `expected the pool to cap concurrency, saw ${peakActiveRequests}`,
+    );
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+});
+
 test("POST supplies Origin and a 302 downgrade clears body headers", async () => {
   const mocked = mockFetch((_call, index) =>
     index === 0
