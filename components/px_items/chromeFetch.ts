@@ -1,5 +1,3 @@
-import { getDomain } from "tldts";
-
 export type UpstreamCookie = {
   name: string;
   value: string;
@@ -72,14 +70,18 @@ function isExpired(cookie: UpstreamCookie) {
   );
 }
 
-function isValidCookieDomain(requestHostname: string, cookieDomain: string) {
+async function isValidCookieDomain(
+  requestHostname: string,
+  cookieDomain: string,
+) {
   const hostname = requestHostname.toLowerCase();
   const domain = cookieDomain.replace(/^\./, "").toLowerCase();
   const matchesRequest = hostname === domain || hostname.endsWith(`.${domain}`);
+  if (!matchesRequest) return false;
 
-  return (
-    matchesRequest && getDomain(domain, { allowPrivateDomains: true }) !== null
-  );
+  const { getDomain } = await import("tldts");
+
+  return getDomain(domain, { allowPrivateDomains: true }) !== null;
 }
 
 function redirectReferer(previousUrl: URL, nextUrl: URL) {
@@ -186,7 +188,7 @@ export class ChromeFetchClient {
         redirect: "manual",
         signal,
       });
-      this.storeResponseCookies(response, currentUrl);
+      await this.storeResponseCookies(response, currentUrl);
 
       const location = response.headers.get("location");
       if (!location || ![301, 302, 303, 307, 308].includes(response.status)) {
@@ -242,7 +244,7 @@ export class ChromeFetchClient {
       .join("; ");
   }
 
-  private storeResponseCookies(response: Response, requestUrl: URL) {
+  private async storeResponseCookies(response: Response, requestUrl: URL) {
     for (const header of getSetCookieHeaders(response.headers)) {
       const [pair, ...attributes] = header.split(";");
       const separator = pair?.indexOf("=") ?? -1;
@@ -263,7 +265,7 @@ export class ChromeFetchClient {
         const value = rawValue.join("=");
 
         if (name === "domain" && value) {
-          if (!isValidCookieDomain(requestUrl.hostname, value)) {
+          if (!(await isValidCookieDomain(requestUrl.hostname, value))) {
             hasInvalidDomain = true;
             break;
           }
