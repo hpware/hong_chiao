@@ -21,13 +21,17 @@ export default async function GetCreditApplicationData(
   const detailParams = new URLSearchParams();
   detailParams.append("ppqmodel[RMID]", id);
   detailParams.append("ppqmodel[RMDtlID]", "");
-  await client.post(endpoint(apiUrl, "/YSKStu/YSKStu/YSK111SDetail"), {
-    data: detailParams.toString(),
-    headers: {
-      "X-Requested-With": "XMLHttpRequest",
-      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+  const detailResponse = await client.post(
+    endpoint(apiUrl, "/YSKStu/YSKStu/YSK111SDetail"),
+    {
+      data: detailParams.toString(),
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
     },
-  });
+  );
+  await client.discard(detailResponse);
 
   const queryParams = new URLSearchParams();
   queryParams.append("ppqmodel[objid]", "1");

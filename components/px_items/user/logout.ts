@@ -15,11 +15,15 @@ export default async function LogoutRemote(browserCookies: UpstreamCookies) {
 
   const client = createChromeFetch(browserCookies);
 
-  await client.post(endpoint(apiUrl, "/B2KPortal/B2KPortal/ReUrlContent"), {
-    headers: {
-      "X-Requested-With": "XMLHttpRequest",
+  const redirectResponse = await client.post(
+    endpoint(apiUrl, "/B2KPortal/B2KPortal/ReUrlContent"),
+    {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+      },
     },
-  });
+  );
+  await client.discard(redirectResponse);
 
   const logoutResult = await client.post(
     endpoint(apiUrl, "/B2KPortal/B2KPortal/Logout"),
@@ -31,6 +35,8 @@ export default async function LogoutRemote(browserCookies: UpstreamCookies) {
   );
 
   if (!logoutResult.ok) {
+    await client.discard(logoutResult);
     throw new Error(`登出失敗，原因： ${logoutResult.status}`);
   }
+  await client.discard(logoutResult);
 }

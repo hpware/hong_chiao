@@ -1,3 +1,5 @@
+import { getDomain } from "tldts";
+
 export type UpstreamCookie = {
   name: string;
   value: string;
@@ -19,7 +21,12 @@ type RequestOptions = Omit<RequestInit, "body" | "method" | "redirect"> & {
   data?: BodyInit | null;
 };
 
+type ChromeFetchOptions = {
+  requestTimeoutMs?: number;
+};
+
 const MAX_REDIRECTS = 20;
+const REQUEST_TIMEOUT_MS = 30_000;
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
 
@@ -65,16 +72,38 @@ function isExpired(cookie: UpstreamCookie) {
   );
 }
 
+function isValidCookieDomain(requestHostname: string, cookieDomain: string) {
+  const hostname = requestHostname.toLowerCase();
+  const domain = cookieDomain.replace(/^\./, "").toLowerCase();
+  const matchesRequest = hostname === domain || hostname.endsWith(`.${domain}`);
+
+  return (
+    matchesRequest && getDomain(domain, { allowPrivateDomains: true }) !== null
+  );
+}
+
+function redirectReferer(previousUrl: URL, nextUrl: URL) {
+  if (previousUrl.protocol === "https:" && nextUrl.protocol === "http:") {
+    return undefined;
+  }
+
+  return previousUrl.origin === nextUrl.origin
+    ? previousUrl.toString()
+    : `${previousUrl.origin}/`;
+}
+
 export class ChromeFetchClient {
   private cookiesStore: StoredCookie[];
+  private requestTimeoutMs: number;
 
-  constructor(cookies: UpstreamCookies = []) {
+  constructor(cookies: UpstreamCookies = [], options: ChromeFetchOptions = {}) {
     this.cookiesStore = cookies.map((cookie) => ({
       ...cookie,
       domain: cookie.domain.replace(/^\./, "").toLowerCase(),
       path: cookie.path || "/",
-      hostOnly: false,
+      hostOnly: !cookie.domain.startsWith("."),
     }));
+    this.requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
   }
 
   get(url: string, options: Omit<RequestOptions, "data"> = {}) {
@@ -116,14 +145,23 @@ export class ChromeFetchClient {
     return matchingCookies;
   }
 
+  async discard(response: Response) {
+    await response.body?.cancel();
+  }
+
   private async fetch(url: string, init: RequestInit) {
     let currentUrl = new URL(url);
     let method = init.method ?? "GET";
     let body = init.body;
     let referer: string | undefined;
+    const requestHeaders = new Headers(init.headers);
+    const timeoutSignal = AbortSignal.timeout(this.requestTimeoutMs);
+    const signal = init.signal
+      ? AbortSignal.any([init.signal, timeoutSignal])
+      : timeoutSignal;
 
-    for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
-      const headers = new Headers(init.headers);
+    for (let redirects = 0; redirects < MAX_REDIRECTS; redirects += 1) {
+      const headers = new Headers(requestHeaders);
       headers.set("User-Agent", USER_AGENT);
       headers.set("Accept-Language", "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7");
       if (!headers.has("Accept")) {
@@ -131,6 +169,9 @@ export class ChromeFetchClient {
       }
       if (referer && !headers.has("Referer")) {
         headers.set("Referer", referer);
+      }
+      if (method !== "GET" && method !== "HEAD" && !headers.has("Origin")) {
+        headers.set("Origin", currentUrl.origin);
       }
 
       const cookieHeader = this.cookieHeader(currentUrl);
@@ -143,6 +184,7 @@ export class ChromeFetchClient {
         headers,
         method,
         redirect: "manual",
+        signal,
       });
       this.storeResponseCookies(response, currentUrl);
 
@@ -150,15 +192,32 @@ export class ChromeFetchClient {
       if (!location || ![301, 302, 303, 307, 308].includes(response.status)) {
         return response;
       }
-      if (redirects === MAX_REDIRECTS) {
-        await response.body?.cancel();
+      if (redirects === MAX_REDIRECTS - 1) {
+        await this.discard(response);
         throw new Error(`Too many redirects while requesting ${url}`);
       }
 
       const previousUrl = currentUrl;
-      currentUrl = new URL(location, previousUrl);
-      referer = previousUrl.toString();
-      await response.body?.cancel();
+      let nextUrl: URL;
+      try {
+        nextUrl = new URL(location, previousUrl);
+      } catch (error) {
+        await this.discard(response);
+        throw error;
+      }
+
+      const crossesOrigin = previousUrl.origin !== nextUrl.origin;
+      referer = redirectReferer(previousUrl, nextUrl);
+      await this.discard(response);
+      currentUrl = nextUrl;
+
+      if (crossesOrigin) {
+        requestHeaders.delete("Authorization");
+        requestHeaders.delete("Proxy-Authorization");
+        requestHeaders.delete("Referer");
+        requestHeaders.delete("Origin");
+        requestHeaders.delete("X-Requested-With");
+      }
 
       if (
         response.status === 303 ||
@@ -167,6 +226,9 @@ export class ChromeFetchClient {
       ) {
         method = "GET";
         body = undefined;
+        for (const header of [...requestHeaders.keys()]) {
+          if (header.startsWith("content-")) requestHeaders.delete(header);
+        }
       }
     }
 
@@ -193,6 +255,7 @@ export class ChromeFetchClient {
         path: defaultCookiePath(requestUrl.pathname),
         hostOnly: true,
       };
+      let hasInvalidDomain = false;
 
       for (const rawAttribute of attributes) {
         const [rawName, ...rawValue] = rawAttribute.trim().split("=");
@@ -200,6 +263,10 @@ export class ChromeFetchClient {
         const value = rawValue.join("=");
 
         if (name === "domain" && value) {
+          if (!isValidCookieDomain(requestUrl.hostname, value)) {
+            hasInvalidDomain = true;
+            break;
+          }
           cookie.domain = value.replace(/^\./, "").toLowerCase();
           cookie.hostOnly = false;
         } else if (name === "path" && value) {
@@ -224,6 +291,8 @@ export class ChromeFetchClient {
         }
       }
 
+      if (hasInvalidDomain) continue;
+
       this.cookiesStore = this.cookiesStore.filter(
         (stored) =>
           !(
@@ -237,6 +306,9 @@ export class ChromeFetchClient {
   }
 }
 
-export function createChromeFetch(cookies: UpstreamCookies = []) {
-  return new ChromeFetchClient(cookies);
+export function createChromeFetch(
+  cookies: UpstreamCookies = [],
+  options: ChromeFetchOptions = {},
+) {
+  return new ChromeFetchClient(cookies, options);
 }

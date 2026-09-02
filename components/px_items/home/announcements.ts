@@ -42,6 +42,7 @@ export default async function GetAnnouncements(
     },
   });
   if (response.status !== 200) {
+    await client.discard(response);
     throw new Error("It seems like you are logged out?");
   }
 
