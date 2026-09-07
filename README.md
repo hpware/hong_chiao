@@ -19,9 +19,13 @@ rate limiting. This operational state is never written to disk or sent to
 another service, is automatically removed after its short limiting window, and
 disappears when the process restarts.
 
-The browser stores the displayed user name locally to avoid a repeated upstream
-request and provide a faster interface. The connection pool shares transport
-connections only; it does not share user sessions or response data.
+While the site is open, the browser keeps fetched query results in volatile
+memory to avoid duplicate requests and provide faster navigation. This query
+cache is not written to disk and disappears when the page is reloaded or
+closed. Separately, the displayed user name is stored in browser-local storage
+until it is updated by a later login or the user clears the site's browser
+data. The connection pool shares transport connections only; it does not share
+user sessions or response data.
 
 <!--## Q&A
 ### 我的學校的系統有綁 SSO 還可以用這個系統嗎？
