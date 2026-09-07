@@ -127,6 +127,57 @@ test("separate clients dispatch upstream requests concurrently", async () => {
   }
 });
 
+test("reused pooled connections do not mix user cookies or responses", async () => {
+  const seenCookies: string[] = [];
+  let connections = 0;
+  const server = createServer((request, response) => {
+    const cookie = request.headers.cookie ?? "";
+    seenCookies.push(cookie);
+    response.end(`response-for:${cookie}`);
+  });
+  server.on("connection", () => {
+    connections += 1;
+  });
+
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.notEqual(address, null);
+  assert.equal(typeof address, "object");
+
+  try {
+    if (!address || typeof address === "string") return;
+    const url = `http://127.0.0.1:${address.port}/private`;
+    const expectedCookies = Array.from(
+      { length: 20 },
+      (_, index) => `session=user-${index}`,
+    );
+
+    for (const cookie of expectedCookies) {
+      const client = createChromeFetch([
+        {
+          name: "session",
+          value: cookie.slice("session=".length),
+          domain: "127.0.0.1",
+          path: "/",
+        },
+      ]);
+      const response = await client.get(url);
+      assert.equal(await response.text(), `response-for:${cookie}`);
+    }
+
+    assert.deepEqual(seenCookies, expectedCookies);
+    assert.ok(
+      connections <= 16,
+      `expected pooled connection reuse, saw ${connections} connections`,
+    );
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+});
+
 test("POST supplies Origin and a 302 downgrade clears body headers", async () => {
   const mocked = mockFetch((_call, index) =>
     index === 0
