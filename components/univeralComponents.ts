@@ -1,14 +1,7 @@
 import { NextRequest } from "next/server";
+import { authCookieNames } from "@/lib/auth-cookies";
 
-export const authCookieNames = [
-  "ASP.NET_SessionId",
-  "ssClientIP",
-  "ssAID",
-  "ssSchID",
-  "ssSchName",
-  "ssLoginID",
-  "ssLoginName",
-] as const;
+export { authCookieNames } from "@/lib/auth-cookies";
 
 export function endpoint(apiUrl: string, path: string): string {
   const base = new URL(apiUrl.endsWith("/") ? apiUrl : `${apiUrl}/`);

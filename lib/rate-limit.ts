@@ -1,5 +1,5 @@
 import { createHmac, randomBytes } from "node:crypto";
-import { createClient } from "redis";
+import { RedisConnection, type RedisClient } from "./redis-connection.ts";
 
 export type RateLimitResult = {
   allowed: boolean;
@@ -44,52 +44,7 @@ end
 return {1, client_limit, client_limit - client_count, 0}
 `;
 
-function createRateLimitClient(url: string) {
-  return createClient({
-    url,
-    disableOfflineQueue: true,
-    socket: {
-      connectTimeout: 1_000,
-      reconnectStrategy: false,
-    },
-  });
-}
-
-type RedisClient = ReturnType<typeof createRateLimitClient>;
-
-let clientPromise: Promise<RedisClient> | undefined;
-let activeClient: RedisClient | undefined;
-
-function discardRedisClient(client: RedisClient) {
-  if (activeClient !== client) return;
-
-  activeClient = undefined;
-  clientPromise = undefined;
-  if (client.isOpen) client.destroy();
-}
-
-function getRedisClient(): Promise<RedisClient> {
-  if (clientPromise) return clientPromise;
-
-  const url = process.env.REDIS_URL;
-  if (!url) {
-    return Promise.reject(new Error("REDIS_URL is required"));
-  }
-
-  const client = createRateLimitClient(url);
-  activeClient = client;
-  client.on("error", (error) => {
-    console.error("Redis rate limiter error", error);
-  });
-  client.on("end", () => discardRedisClient(client));
-
-  const connecting = client.connect().catch((error: unknown) => {
-    discardRedisClient(client);
-    throw error;
-  });
-  clientPromise = connecting;
-  return connecting;
-}
+const rateLimitRedis = new RedisConnection("REDIS_URL", "rate limiter");
 
 function requestAddress(request: Request) {
   const forwardedFor = request.headers
@@ -156,14 +111,14 @@ export async function checkApiRateLimit(
 ): Promise<RateLimitResult> {
   let client: RedisClient | undefined;
   try {
-    client = await getRedisClient();
+    client = await rateLimitRedis.getClient();
     const reply = await client.eval(RATE_LIMIT_SCRIPT, {
       keys: [SERVER_KEY, clientKey(request)],
       arguments: [String(SERVER_LIMIT), String(CLIENT_LIMIT), String(WINDOW_MS)],
     });
     return parseRateLimitReply(reply);
   } catch (error: unknown) {
-    if (client && !client.isReady) discardRedisClient(client);
+    if (client && !client.isReady) rateLimitRedis.discard(client);
     console.error("Unable to check the Redis rate limit", error);
     return {
       allowed: false,

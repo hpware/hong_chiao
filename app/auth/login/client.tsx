@@ -24,6 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { clearDeviceCacheKey } from "@/lib/device-cache-client";
 
 export default function Client() {
   const trpc = useTRPC();
@@ -33,6 +34,7 @@ export default function Client() {
   const [displayPassword, setDisplayPassword] = useState(false);
   const [username, setUsername] = useState("");
   const isExpired = params.get("expired") === "true";
+  const loggedOut = params.get("loggedOut") === "true";
   const prefillUserId = params.get("prefill") === "true";
   // check login status
   const { error: updateSessionError, isLoading: updateSessionLoading } =
@@ -45,6 +47,14 @@ export default function Client() {
   useEffect(() => {
     if (isExpired) toast.error("登入逾時，請重新登入");
   }, [isExpired]);
+
+  useEffect(() => {
+    if (loggedOut) {
+      void clearDeviceCacheKey().catch((error: unknown) => {
+        console.error("Unable to clear the device cache key", error);
+      });
+    }
+  }, [loggedOut]);
 
   useEffect(() => {
     setUsername(prefillUserId ? (localStorage.getItem("studentId") ?? "") : "");

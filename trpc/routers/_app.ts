@@ -53,6 +53,7 @@ import GetUserName from "@/components/px_items/user/name";
 import RenewTimeoutTimer from "@/components/px_items/user/renewTimeoutTimer";
 import ChangePassword from "@/components/px_items/user/changePassword";
 import LogoutRemote from "@/components/px_items/user/logout";
+import { DEVICE_CACHE_COOKIE } from "@/lib/device-cache-protocol";
 
 const missingApiUrlMessage =
   "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。";
@@ -939,6 +940,7 @@ export const appRouter = createTRPCRouter({
           "ssLoginID",
           "ssLoginForLDAP",
           "ssLoginName",
+          DEVICE_CACHE_COOKIE,
         ]) {
           cookieStore.delete(cookieName);
         }
@@ -1083,6 +1085,7 @@ export const appRouter = createTRPCRouter({
           "ssLoginID",
           "ssLoginForLDAP",
           "ssLoginName",
+          DEVICE_CACHE_COOKIE,
         ]) {
           cookieStore.delete(cookieName);
         }

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { authCookieNames } from "@/components/univeralComponents";
+import { authCookieNames } from "@/lib/auth-cookies";
 
 const publicPaths = new Set(["/auth/login", "/auth/ask"]);
 
