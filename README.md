@@ -12,12 +12,16 @@ All of the APIs are in yaak/, install yaak and then import the yaak folder, then
 
 ## Privacy and in-memory state
 
-The server does not cache school-system responses, personal records, page
-contents, or session cookies. It keeps network connections warm and temporarily
-stores a client network address with request counters in process memory for
-rate limiting. This operational state is never written to disk or sent to
-another service, is automatically removed after its short limiting window, and
-disappears when the process restarts.
+The system does not retain school records on the server. School data exists in
+server memory only while a request is being processed and returned, and is not
+retained after the response or written to server disk. The server does not
+cache personal records, page contents, or session cookies.
+
+For abuse protection, the server temporarily stores a client network address
+with request counters in process memory. This limited operational data is never
+written to disk or sent to another service, is automatically removed after its
+short limiting window, and disappears when the process restarts. Warm network
+connections contain no shared user session or response cache.
 
 While the site is open, the browser keeps fetched query results in volatile
 memory to avoid duplicate requests and provide faster navigation. This query
@@ -26,6 +30,11 @@ closed. Separately, the displayed user name is stored in browser-local storage
 until it is updated by a later login or the user clears the site's browser
 data. The connection pool shares transport connections only; it does not share
 user sessions or response data.
+
+The optional AI assistant is disabled by default. If a user enables it, chat
+content and data the user asks the assistant to query may be sent to the AI API
+provider configured by that user. Retention by that provider is governed by
+the provider's own privacy policy.
 
 <!--## Q&A
 ### 我的學校的系統有綁 SSO 還可以用這個系統嗎？
