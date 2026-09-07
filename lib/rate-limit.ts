@@ -23,7 +23,7 @@ export class InMemoryRateLimiter {
     this.options = options;
   }
 
-  check(key: string, now = Date.now()): RateLimitResult {
+  check(key: string, now = Date.now(), consume = true): RateLimitResult {
     const existing = this.windows.get(key);
     const window =
       !existing || existing.resetsAt <= now
@@ -42,9 +42,11 @@ export class InMemoryRateLimiter {
       };
     }
 
-    window.count += 1;
-    this.windows.set(key, window);
-    this.pruneExpired(now);
+    if (consume) {
+      window.count += 1;
+      this.windows.set(key, window);
+      this.pruneExpired(now);
+    }
 
     return {
       allowed: true,
@@ -72,23 +74,11 @@ const serverLimiter = new InMemoryRateLimiter({
   windowMs: 10_000,
 });
 
-function getCookie(cookieHeader: string, name: string) {
-  const prefix = `${name}=`;
-  return cookieHeader
-    .split(";")
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith(prefix))
-    ?.slice(prefix.length);
-}
-
 function requestKey(request: Request) {
-  const sessionId = getCookie(
-    request.headers.get("cookie") ?? "",
-    "ASP.NET_SessionId",
-  );
-  if (sessionId) return `session:${sessionId}`;
-
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0];
+  const forwardedFor = request.headers
+    .get("x-forwarded-for")
+    ?.split(",")
+    .at(-1);
   const address =
     request.headers.get("cf-connecting-ip") ??
     request.headers.get("x-real-ip") ??
@@ -98,11 +88,16 @@ function requestKey(request: Request) {
 }
 
 export function checkApiRateLimit(request: Request) {
-  const clientResult = clientLimiter.check(requestKey(request));
+  const now = Date.now();
+  const serverResult = serverLimiter.check("server", now, false);
+  if (!serverResult.allowed) return serverResult;
+
+  const key = requestKey(request);
+  const clientResult = clientLimiter.check(key, now, false);
   if (!clientResult.allowed) return clientResult;
 
-  const serverResult = serverLimiter.check("server");
-  return serverResult.allowed ? clientResult : serverResult;
+  serverLimiter.check("server", now);
+  return clientLimiter.check(key, now);
 }
 
 export function tooManyRequests(result: RateLimitResult) {

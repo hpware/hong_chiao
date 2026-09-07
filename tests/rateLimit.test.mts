@@ -29,3 +29,12 @@ test("rate limiter allows requests after the window resets", () => {
   assert.equal(limiter.check("client-a", 999).allowed, false);
   assert.equal(limiter.check("client-a", 1_000).allowed, true);
 });
+
+test("checking capacity does not consume quota", () => {
+  const limiter = new InMemoryRateLimiter({ maxRequests: 1, windowMs: 1_000 });
+
+  assert.equal(limiter.check("client-a", 0, false).allowed, true);
+  assert.equal(limiter.check("client-a", 1, false).allowed, true);
+  assert.equal(limiter.check("client-a", 2).allowed, true);
+  assert.equal(limiter.check("client-a", 3).allowed, false);
+});
