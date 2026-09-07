@@ -17,11 +17,14 @@ server memory only while a request is being processed and returned, and is not
 retained after the response or written to server disk. The server does not
 cache personal records, page contents, or session cookies.
 
-For abuse protection, the server temporarily stores a client network address
-with request counters in process memory. This limited operational data is never
-written to disk or sent to another service, is automatically removed after its
-short limiting window, and disappears when the process restarts. Warm network
-connections contain no shared user session or response cache.
+For abuse protection, the server hashes the client network address and stores
+that hash with request counters in a private Redis service for 10 seconds. This
+limited operational data remains in server-side volatile memory, is never
+written to disk, is not used as a content cache, and disappears when its short
+TTL expires or Redis restarts. Redis is capped at 32 MB of data and its
+container at 64 MB. If it is unavailable or full, API requests fail closed
+instead of bypassing the limit. Warm network connections contain no shared user
+session or response cache.
 
 While the site is open, the browser keeps fetched query results in volatile
 memory to avoid duplicate requests and provide faster navigation. This query

@@ -2,7 +2,7 @@ import GetBillDownload from "@/components/px_items/bill/download";
 import { getBrowserCookies } from "@/components/univeralComponents";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { checkApiRateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { checkApiRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,8 +17,8 @@ export const GET = async (
   websiteContext: { params: Promise<{ id: string }> },
 ) => {
   try {
-    const rateLimit = checkApiRateLimit(request);
-    if (!rateLimit.allowed) return tooManyRequests(rateLimit);
+    const rateLimit = await checkApiRateLimit(request);
+    if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
     const rawUrl = process.env.API_URL;
     if (!rawUrl) {

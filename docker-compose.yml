@@ -9,3 +9,26 @@ services:
       WCFY_API_URL: ${WCFY_API_URL} # 給下載用的
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       NEXT_PUBLIC_OWNER_EMAIL: ${NEXT_PUBLIC_OWNER_EMAIL}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:8-alpine
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 32mb
+      - --maxmemory-policy
+      - noeviction
+    mem_limit: 64m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
