@@ -23,6 +23,10 @@ The school response is necessarily plaintext in the application process before
 encryption. This design protects stored cache contents; it is not end-to-end
 encryption against the running server.
 
+A hit can be up to one hour older than the upstream school system. Keep the
+allowlist limited to reads where that staleness is acceptable; changes made
+outside this application cannot trigger local invalidation.
+
 ## Boundaries
 
 - `lib/device-cache-protocol.ts` owns protocol constants, the explicit query

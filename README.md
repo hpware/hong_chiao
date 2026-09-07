@@ -29,7 +29,8 @@ the user is signed in.
 The content-cache Redis instance has disk persistence disabled, a 32 MB data
 limit, a 64 MB container limit, a volatile LRU eviction policy, and a one-hour
 TTL on every response. Entries can disappear earlier due to eviction or a
-Redis restart. Logout requests immediate deletion of that device's entries,
+Redis restart, but a cache hit can also be up to one hour older than the school
+system. Logout requests immediate deletion of that device's entries,
 removes its private key, and creates a new key on a later login. School-data
 mutations also rotate the device key. If Redis cannot purge immediately, the
 old ciphertext is no longer decryptable and remains only until expiry or
