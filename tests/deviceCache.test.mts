@@ -7,6 +7,7 @@ import {
 } from "node:crypto";
 import test from "node:test";
 import {
+  createEncryptedResponseAdditionalData,
   isCacheableTrpcRequest,
   isEncryptedResponseEnvelope,
   rotatesDeviceCacheKey,
@@ -76,11 +77,19 @@ test("server envelopes decrypt only with the matching device private key", () =>
     .export({ format: "der", type: "spki" })
     .toString("base64");
   const plaintext = Buffer.from("private school response");
+  const additionalData = createEncryptedResponseAdditionalData({
+    method: "GET",
+    url: "https://example.test/api/trpc/reward.get?input=semester-1",
+    deviceId: "device-a",
+    status: 200,
+    contentType: "application/json",
+  });
   const envelope = encryptResponseBody(
     plaintext,
     publicKeyBase64,
     200,
     "application/json",
+    additionalData,
   );
 
   assert.equal(isEncryptedResponseEnvelope(envelope), true);
@@ -100,10 +109,35 @@ test("server envelopes decrypt only with the matching device private key", () =>
     contentKey,
     Buffer.from(envelope.iv, "base64"),
   );
+  decipher.setAAD(Buffer.from(additionalData, "utf8"));
   decipher.setAuthTag(authTag);
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+  const decrypted = Buffer.concat([
+    decipher.update(encrypted),
+    decipher.final(),
+  ]);
 
   assert.deepEqual(decrypted, plaintext);
+
+  const substitutedDecipher = createDecipheriv(
+    "aes-256-gcm",
+    contentKey,
+    Buffer.from(envelope.iv, "base64"),
+  );
+  substitutedDecipher.setAAD(
+    Buffer.from(
+      createEncryptedResponseAdditionalData({
+        method: "GET",
+        url: "https://example.test/api/trpc/reward.get?input=semester-2",
+        deviceId: "device-a",
+        status: 200,
+        contentType: "application/json",
+      }),
+      "utf8",
+    ),
+  );
+  substitutedDecipher.setAuthTag(authTag);
+  substitutedDecipher.update(encrypted);
+  assert.throws(() => substitutedDecipher.final());
 
   const otherDevice = generateKeyPairSync("rsa", { modulusLength: 2_048 });
   assert.throws(() =>

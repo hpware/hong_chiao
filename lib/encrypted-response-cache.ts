@@ -15,6 +15,7 @@ import {
   DEVICE_CACHE_TTL_SECONDS,
   DEVICE_PUBLIC_KEY_HEADER,
   ENCRYPTED_RESPONSE_HEADER,
+  createEncryptedResponseAdditionalData,
   isCacheableTrpcRequest,
   isEncryptedResponseEnvelope,
   type EncryptedResponseEnvelope,
@@ -117,6 +118,7 @@ export function encryptResponseBody(
   publicKeyBase64: string,
   status: number,
   contentType: string,
+  additionalData: string,
 ): EncryptedResponseEnvelope {
   const publicKey = createPublicKey({
     key: Buffer.from(publicKeyBase64, "base64"),
@@ -133,6 +135,7 @@ export function encryptResponseBody(
   const contentKey = randomBytes(32);
   const iv = randomBytes(12);
   const cipher = createCipheriv("aes-256-gcm", contentKey, iv);
+  cipher.setAAD(Buffer.from(additionalData, "utf8"));
   const encrypted = Buffer.concat([cipher.update(body), cipher.final()]);
   const ciphertext = Buffer.concat([encrypted, cipher.getAuthTag()]);
   const wrappedKey = publicEncrypt(
@@ -189,13 +192,22 @@ export async function encryptAndCacheResponse(
   if (!scope?.publicKey) return response;
 
   const responseBody = new Uint8Array(await response.arrayBuffer());
+  const contentType =
+    response.headers.get("content-type") ?? "application/json";
   let envelope: EncryptedResponseEnvelope;
   try {
     envelope = encryptResponseBody(
       responseBody,
       scope.publicKey,
       response.status,
-      response.headers.get("content-type") ?? "application/json",
+      contentType,
+      createEncryptedResponseAdditionalData({
+        method: request.method,
+        url: request.url,
+        deviceId: scope.deviceId,
+        status: response.status,
+        contentType,
+      }),
     );
   } catch (error: unknown) {
     console.error("Unable to encrypt a device-cache response", error);

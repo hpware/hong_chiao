@@ -5,6 +5,7 @@ import {
   DEVICE_CACHE_STATUS_HEADER,
   DEVICE_PUBLIC_KEY_HEADER,
   ENCRYPTED_RESPONSE_HEADER,
+  createEncryptedResponseAdditionalData,
   isCacheableTrpcRequest,
   isEncryptedResponseEnvelope,
   rotatesDeviceCacheKey,
@@ -166,6 +167,7 @@ function getDeviceKeys() {
 async function decryptEnvelope(
   envelope: EncryptedResponseEnvelope,
   privateKey: CryptoKey,
+  additionalData: string,
 ) {
   const contentKey = await crypto.subtle.decrypt(
     { name: "RSA-OAEP" },
@@ -180,7 +182,12 @@ async function decryptEnvelope(
     ["decrypt"],
   );
   return crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: base64ToBytes(envelope.iv), tagLength: 128 },
+    {
+      name: "AES-GCM",
+      iv: base64ToBytes(envelope.iv),
+      tagLength: 128,
+      additionalData: new TextEncoder().encode(additionalData),
+    },
     aesKey,
     base64ToBytes(envelope.ciphertext),
   );
@@ -237,7 +244,17 @@ export async function encryptedDeviceCacheFetch(
   if (!isEncryptedResponseEnvelope(envelope)) {
     throw new Error("The server returned an invalid encrypted response");
   }
-  const plaintext = await decryptEnvelope(envelope, deviceKeys.privateKey);
+  const plaintext = await decryptEnvelope(
+    envelope,
+    deviceKeys.privateKey,
+    createEncryptedResponseAdditionalData({
+      method: request.method,
+      url: request.url,
+      deviceId: deviceKeys.deviceId,
+      status: envelope.status,
+      contentType: envelope.contentType,
+    }),
+  );
   const headers = new Headers({
     "Cache-Control": "private, no-store",
     "Content-Type": envelope.contentType,

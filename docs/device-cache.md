@@ -19,6 +19,11 @@ Content eviction must never weaken request limits.
 5. Redis receives only the encrypted envelope. The browser unwraps and decrypts
    the response before tRPC sees it.
 
+AES-GCM authenticated additional data binds the ciphertext to its request
+method, procedure path, query input, device ID, response status, and content
+type. Moving an otherwise valid envelope to another Redis key or editing its
+plaintext metadata therefore makes browser decryption fail.
+
 The school response is necessarily plaintext in the application process before
 encryption. This design protects stored cache contents; it is not end-to-end
 encryption against the running server.

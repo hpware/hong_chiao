@@ -18,6 +18,28 @@ export type EncryptedResponseEnvelope = {
   wrappedKey: string;
 };
 
+type EncryptedResponseIdentity = {
+  method: string;
+  url: string;
+  deviceId: string;
+  status: number;
+  contentType: string;
+};
+
+export function createEncryptedResponseAdditionalData(
+  identity: EncryptedResponseIdentity,
+) {
+  const url = new URL(identity.url, "http://localhost");
+  return JSON.stringify({
+    version: 1,
+    algorithm: DEVICE_CACHE_ALGORITHM,
+    request: `${identity.method.toUpperCase()}:${url.pathname}${url.search}`,
+    deviceId: identity.deviceId,
+    status: identity.status,
+    contentType: identity.contentType,
+  });
+}
+
 const cacheableProcedures: ReadonlySet<string> = new Set([
   "indexPage.basicLeaveData",
   "home.data",
