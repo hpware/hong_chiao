@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { authCookieNames } from "@/components/univeralComponents";
 import LogoutRemote from "@/components/px_items/user/logout";
+import { checkApiRateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +23,9 @@ function redirectToLogin(request: NextRequest, isExpired = false) {
 }
 
 export const GET = async (request: NextRequest) => {
+  const rateLimit = checkApiRateLimit(request);
+  if (!rateLimit.allowed) return tooManyRequests(rateLimit);
+
   const params = request.nextUrl.searchParams;
   const isExpired = params.get("expired") === "true";
 

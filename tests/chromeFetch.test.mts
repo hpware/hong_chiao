@@ -112,11 +112,11 @@ test("separate clients dispatch upstream requests concurrently", async () => {
     );
 
     assert.ok(
-      peakActiveRequests >= 16,
+      peakActiveRequests >= 8,
       `expected concurrent requests, saw only ${peakActiveRequests}`,
     );
     assert.ok(
-      peakActiveRequests <= 32,
+      peakActiveRequests <= 16,
       `expected the pool to cap concurrency, saw ${peakActiveRequests}`,
     );
   } finally {

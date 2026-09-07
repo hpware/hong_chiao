@@ -27,7 +27,7 @@ type ChromeFetchOptions = {
 
 const MAX_REDIRECTS = 20;
 const REQUEST_TIMEOUT_MS = 30_000;
-const UPSTREAM_CONNECTIONS = 32;
+const UPSTREAM_CONNECTIONS = 16;
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
 
@@ -35,7 +35,6 @@ const USER_AGENT =
 // connections. The cap still allows bursts to run concurrently without an
 // unbounded number of clients overwhelming the upstream school system.
 const upstreamDispatcher = new Agent({
-  allowH2: true,
   connections: UPSTREAM_CONNECTIONS,
   connectTimeout: 10_000,
   keepAliveTimeout: 60_000,
