@@ -34,7 +34,13 @@ user sessions or response data.
 The optional AI assistant is disabled by default. If a user enables it, chat
 content and data the user asks the assistant to query may be sent to the AI API
 provider configured by that user. Retention by that provider is governed by
-the provider's own privacy policy.
+the provider's own privacy policy. The configured API key, AI settings, and AI
+conversation history are also stored in browser local storage. That history can
+include prompts, responses, charts, and school-derived tool results, and
+persists across reloads and browser restarts until the user clears the chat or
+the site's browser data. Users should enable this only on a trusted device;
+same-origin code and browser extensions with site access may be able to read
+the locally stored values.
 
 <!--## Q&A
 ### 我的學校的系統有綁 SSO 還可以用這個系統嗎？
