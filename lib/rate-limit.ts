@@ -50,7 +50,7 @@ function createRateLimitClient(url: string) {
     disableOfflineQueue: true,
     socket: {
       connectTimeout: 1_000,
-      reconnectStrategy: (retries) => Math.min(100 * 2 ** retries, 2_000),
+      reconnectStrategy: false,
     },
   });
 }
@@ -58,6 +58,15 @@ function createRateLimitClient(url: string) {
 type RedisClient = ReturnType<typeof createRateLimitClient>;
 
 let clientPromise: Promise<RedisClient> | undefined;
+let activeClient: RedisClient | undefined;
+
+function discardRedisClient(client: RedisClient) {
+  if (activeClient !== client) return;
+
+  activeClient = undefined;
+  clientPromise = undefined;
+  if (client.isOpen) client.destroy();
+}
 
 function getRedisClient(): Promise<RedisClient> {
   if (clientPromise) return clientPromise;
@@ -68,13 +77,14 @@ function getRedisClient(): Promise<RedisClient> {
   }
 
   const client = createRateLimitClient(url);
+  activeClient = client;
   client.on("error", (error) => {
     console.error("Redis rate limiter error", error);
   });
+  client.on("end", () => discardRedisClient(client));
 
   const connecting = client.connect().catch((error: unknown) => {
-    clientPromise = undefined;
-    client.destroy();
+    discardRedisClient(client);
     throw error;
   });
   clientPromise = connecting;
@@ -144,14 +154,16 @@ export function parseRateLimitReply(reply: unknown): RateLimitResult {
 export async function checkApiRateLimit(
   request: Request,
 ): Promise<RateLimitResult> {
+  let client: RedisClient | undefined;
   try {
-    const client = await getRedisClient();
+    client = await getRedisClient();
     const reply = await client.eval(RATE_LIMIT_SCRIPT, {
       keys: [SERVER_KEY, clientKey(request)],
       arguments: [String(SERVER_LIMIT), String(CLIENT_LIMIT), String(WINDOW_MS)],
     });
     return parseRateLimitReply(reply);
   } catch (error: unknown) {
+    if (client && !client.isReady) discardRedisClient(client);
     console.error("Unable to check the Redis rate limit", error);
     return {
       allowed: false,
