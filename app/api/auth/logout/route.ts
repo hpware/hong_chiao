@@ -18,6 +18,7 @@ function redirectToLogin(request: NextRequest, isExpired = false) {
   for (const cookieName of logoutCookieNames) {
     response.cookies.delete(cookieName);
   }
+  response.headers.set("Cache-Control", "private, no-store");
 
   return response;
 }

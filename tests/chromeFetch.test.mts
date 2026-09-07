@@ -153,6 +153,7 @@ test("POST supplies Origin and a 302 downgrade clears body headers", async () =>
     const firstHeaders = new Headers(mocked.calls[0]?.init.headers);
     const redirectedHeaders = new Headers(mocked.calls[1]?.init.headers);
     assert.equal(firstHeaders.get("origin"), "https://portal.school.edu.tw");
+    assert.equal(mocked.calls[0]?.init.cache, "no-store");
     assert.equal(mocked.calls[1]?.init.method, "GET");
     assert.equal(mocked.calls[1]?.init.body, undefined);
     assert.equal(redirectedHeaders.has("content-type"), false);

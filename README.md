@@ -10,6 +10,19 @@ TPCU => https://tpcu-sw.yhw.tw/auth/login
 ## APIs
 All of the APIs are in yaak/, install yaak and then import the yaak folder, then you have all of the endpoints avaliable!
 
+## Privacy and in-memory state
+
+The server does not cache school-system responses, personal records, page
+contents, or session cookies. It keeps network connections warm and temporarily
+stores a client network address with request counters in process memory for
+rate limiting. This operational state is never written to disk or sent to
+another service, is automatically removed after its short limiting window, and
+disappears when the process restarts.
+
+The browser stores the displayed user name locally to avoid a repeated upstream
+request and provide a faster interface. The connection pool shares transport
+connections only; it does not share user sessions or response data.
+
 <!--## Q&A
 ### 我的學校的系統有綁 SSO 還可以用這個系統嗎？
 1. 登入系統還是依賴 SSO 與 你的校務系統，並把 Cookie 設定在 Proxy 上，這樣就可以了。-->

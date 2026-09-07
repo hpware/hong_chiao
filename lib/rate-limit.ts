@@ -18,6 +18,7 @@ type RateLimitOptions = {
 export class InMemoryRateLimiter {
   private readonly windows = new Map<string, Window>();
   private readonly options: RateLimitOptions;
+  private cleanupTimer: NodeJS.Timeout | undefined;
 
   constructor(options: RateLimitOptions) {
     this.options = options;
@@ -45,7 +46,7 @@ export class InMemoryRateLimiter {
     if (consume) {
       window.count += 1;
       this.windows.set(key, window);
-      this.pruneExpired(now);
+      this.scheduleCleanup();
     }
 
     return {
@@ -57,11 +58,20 @@ export class InMemoryRateLimiter {
   }
 
   private pruneExpired(now: number) {
-    if (this.windows.size < 1_000) return;
-
     for (const [key, window] of this.windows) {
       if (window.resetsAt <= now) this.windows.delete(key);
     }
+  }
+
+  private scheduleCleanup() {
+    if (this.cleanupTimer) return;
+
+    this.cleanupTimer = setTimeout(() => {
+      this.cleanupTimer = undefined;
+      this.pruneExpired(Date.now());
+      if (this.windows.size > 0) this.scheduleCleanup();
+    }, this.options.windowMs);
+    this.cleanupTimer.unref();
   }
 }
 
@@ -106,6 +116,7 @@ export function tooManyRequests(result: RateLimitResult) {
     {
       status: 429,
       headers: {
+        "Cache-Control": "private, no-store",
         "Retry-After": String(result.retryAfterSeconds),
         "X-RateLimit-Limit": String(result.limit),
         "X-RateLimit-Remaining": String(result.remaining),

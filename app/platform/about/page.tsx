@@ -51,6 +51,23 @@ export default function Page() {
             </Link>
           </span>
         </div>
+        <section className="mt-4 rounded-lg border p-4">
+          <h2 className="font-semibold">隱私與暫存說明</h2>
+          <div className="mt-2 space-y-2 text-muted-foreground">
+            <p>
+              為了讓操作更快並避免伺服器被大量請求影響，本系統會在伺服器記憶體中暫時保留連線，以及用於流量限制的網路位址與請求次數。
+              這些流量限制資料不會寫入磁碟或傳送至其他服務，並會在限制時段結束後自動清除；伺服器重新啟動時也會全部消失。
+            </p>
+            <p>
+              伺服器不會快取校務系統回傳的個人資料、頁面內容或 Session
+              Cookie。連線池只重複使用網路連線，不會在使用者之間共用登入狀態或回應內容。
+            </p>
+            <p>
+              瀏覽器會在本機儲存顯示用的使用者名稱，減少重複查詢並提供較快的操作體驗。登出會清除登入
+              Cookie；本機顯示名稱會保留到下次登入時被更新，或由使用者清除瀏覽器的網站資料。
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );

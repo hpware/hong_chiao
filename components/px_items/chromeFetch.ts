@@ -262,6 +262,7 @@ export class ChromeFetchClient {
       const requestInit: NodeRequestInit = {
         ...init,
         body,
+        cache: "no-store",
         dispatcher: upstreamDispatcher,
         headers,
         method,
