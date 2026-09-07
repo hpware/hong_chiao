@@ -17,6 +17,7 @@ check_required API_URL
 check_required NEXT_PUBLIC_APP_URL
 check_required NEXT_PUBLIC_OWNER_EMAIL
 check_required REDIS_URL
+check_required CACHE_REDIS_URL
 
 if [ "$(printf '%s' "${NEXT_PUBLIC_OWNER_EMAIL:-}" | tr -d '[:space:]')" = "changeme@example.com" ]; then
   missing="${missing}NEXT_PUBLIC_OWNER_EMAIL (still set to changeme@example.com)

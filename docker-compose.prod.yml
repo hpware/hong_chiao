@@ -10,9 +10,12 @@ services:
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       NEXT_PUBLIC_OWNER_EMAIL: ${NEXT_PUBLIC_OWNER_EMAIL}
       REDIS_URL: redis://redis:6379
+      CACHE_REDIS_URL: redis://cache-redis:6379
     depends_on:
       redis:
         condition: service_healthy
+      cache-redis:
+        condition: service_started
 
   redis:
     image: redis:8-alpine
@@ -26,6 +29,25 @@ services:
       - 32mb
       - --maxmemory-policy
       - noeviction
+    mem_limit: 64m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  cache-redis:
+    image: redis:8-alpine
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 32mb
+      - --maxmemory-policy
+      - volatile-lru
     mem_limit: 64m
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

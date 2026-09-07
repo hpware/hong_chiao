@@ -37,6 +37,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { toast } from "sonner";
+import { clearDeviceCacheKey } from "@/lib/device-cache-client";
 
 const navItems = [
   //{
@@ -182,8 +183,13 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
       renewQuery.error?.data?.code === "UNAUTHORIZED"
     ) {
       toast.error("Session 過期 請重新登入");
-
-      router.push("/api/auth/logout?prefill=true");
+      void clearDeviceCacheKey(true)
+        .catch((error: unknown) => {
+          console.error("Unable to clear the device cache key", error);
+        })
+        .finally(() => {
+          router.push("/api/auth/logout?prefill=true");
+        });
     }
   }, [
     renewQuery.error,
@@ -303,10 +309,27 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
               isActive={false}
               className="transition-all duration-100"
             >
-              <a href={"/api/auth/logout"} onClick={() => setOpenMobile(false)}>
+              <Link
+                href="/api/auth/logout"
+                prefetch={false}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setOpenMobile(false);
+                  void clearDeviceCacheKey(true)
+                    .catch((error: unknown) => {
+                      console.error(
+                        "Unable to clear the device cache key",
+                        error,
+                      );
+                    })
+                    .finally(() => {
+                      window.location.assign("/api/auth/logout");
+                    });
+                }}
+              >
                 <LogOut />
                 <span>登出</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

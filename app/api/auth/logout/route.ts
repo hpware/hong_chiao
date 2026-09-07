@@ -1,18 +1,30 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { authCookieNames } from "@/components/univeralComponents";
+import { authCookieNames } from "@/lib/auth-cookies";
 import LogoutRemote from "@/components/px_items/user/logout";
 import { checkApiRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { purgeDeviceResponseCache } from "@/lib/encrypted-response-cache";
+import { DEVICE_CACHE_COOKIE } from "@/lib/device-cache-protocol";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const logoutCookieNames = [...authCookieNames, "ssLoginForLDAP"] as const;
+const logoutCookieNames = [
+  ...authCookieNames,
+  "ssLoginForLDAP",
+  DEVICE_CACHE_COOKIE,
+] as const;
 
 function redirectToLogin(request: NextRequest, isExpired = false) {
+  const loginUrl = new URL(
+    "/auth/login",
+    process.env.NEXT_PUBLIC_APP_URL || request.url,
+  );
+  loginUrl.searchParams.set("loggedOut", "true");
+  if (isExpired) loginUrl.searchParams.set("expired", "true");
+  if (request.nextUrl.searchParams.get("prefill") === "true") {
+    loginUrl.searchParams.set("prefill", "true");
+  }
   const response = NextResponse.redirect(
-    new URL(
-      `/auth/login${isExpired ? "?expired=true" : ""}`,
-      process.env.NEXT_PUBLIC_APP_URL || request.url,
-    ),
+    loginUrl,
   );
 
   for (const cookieName of logoutCookieNames) {
@@ -29,6 +41,7 @@ export const GET = async (request: NextRequest) => {
 
   const params = request.nextUrl.searchParams;
   const isExpired = params.get("expired") === "true";
+  await purgeDeviceResponseCache(request);
 
   try {
     const rawUrl = process.env.API_URL;

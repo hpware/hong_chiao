@@ -12,22 +12,13 @@ import { createTRPCContext } from "@trpc/tanstack-react-query";
 
 import { useState } from "react";
 import superjson from "superjson";
+import { encryptedDeviceCacheFetch } from "@/lib/device-cache-client";
 import { makeQueryClient } from "./query-client";
 import type { AppRouter } from "./routers/_app";
-import type { AnyTRPCProcedure } from "@trpc/server";
+import type { AppProcedurePath } from "./procedure-path";
 export const { TRPCProvider, useTRPC, useTRPCClient } =
   createTRPCContext<AppRouter>();
 let browserQueryClient: QueryClient;
-
-type ProcedurePaths<T, Prefix extends string = ""> = {
-  [K in keyof T & string]: T[K] extends AnyTRPCProcedure
-    ? `${Prefix}${K}`
-    : T[K] extends object
-      ? ProcedurePaths<T[K], `${Prefix}${K}.`>
-      : never;
-}[keyof T & string];
-
-type AppProcedurePath = ProcedurePaths<AppRouter["_def"]["record"]>;
 
 // whitelist batch requests
 const useBatch: ReadonlySet<string> = new Set([
@@ -76,10 +67,12 @@ export function TRPCReactProvider(
           true: httpBatchLink({
             transformer: superjson,
             url: getUrl(),
+            fetch: encryptedDeviceCacheFetch,
           }),
           false: httpBatchStreamLink({
             transformer: superjson,
             url: getUrl(),
+            fetch: encryptedDeviceCacheFetch,
           }),
         }),
       ],
