@@ -230,6 +230,7 @@ export async function encryptedDeviceCacheFetch(
     }
   }
   if (response.headers.get(ENCRYPTED_RESPONSE_HEADER) !== "1") return response;
+  if (!response.ok) return response;
   if (!deviceKeys) throw new Error("Encrypted response has no device key");
 
   const envelope: unknown = await response.json();
