@@ -51,6 +51,13 @@ function domainMatches(hostname: string, cookie: StoredCookie) {
     : host === domain || host.endsWith(`.${domain}`);
 }
 
+function isValidCookieDomain(hostname: string, domain: string) {
+  const host = hostname.toLowerCase();
+  return (
+    domain.includes(".") && (host === domain || host.endsWith(`.${domain}`))
+  );
+}
+
 function pathMatches(pathname: string, cookiePath: string) {
   if (pathname === cookiePath) return true;
   if (!pathname.startsWith(cookiePath)) return false;
@@ -193,14 +200,20 @@ export class ChromeFetchClient {
         path: defaultCookiePath(requestUrl.pathname),
         hostOnly: true,
       };
+      let rejectCookie = false;
 
       for (const rawAttribute of attributes) {
         const [rawName, ...rawValue] = rawAttribute.trim().split("=");
         const name = rawName?.toLowerCase();
         const value = rawValue.join("=");
 
-        if (name === "domain" && value) {
-          cookie.domain = value.replace(/^\./, "").toLowerCase();
+        if (name === "domain") {
+          const domain = value.trim().replace(/^\./, "").toLowerCase();
+          if (!isValidCookieDomain(requestUrl.hostname, domain)) {
+            rejectCookie = true;
+            break;
+          }
+          cookie.domain = domain;
           cookie.hostOnly = false;
         } else if (name === "path" && value) {
           cookie.path = value;
@@ -223,6 +236,8 @@ export class ChromeFetchClient {
           if (sameSite === "none") cookie.sameSite = "None";
         }
       }
+
+      if (rejectCookie) continue;
 
       this.cookiesStore = this.cookiesStore.filter(
         (stored) =>
