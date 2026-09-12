@@ -85,6 +85,99 @@ test("ignoring a get()/post() result does not accumulate sockets", async () => {
   }
 });
 
+test("separate clients dispatch upstream requests concurrently", async () => {
+  let activeRequests = 0;
+  let peakActiveRequests = 0;
+  const server = createServer((_request, response) => {
+    activeRequests += 1;
+    peakActiveRequests = Math.max(peakActiveRequests, activeRequests);
+
+    setTimeout(() => {
+      activeRequests -= 1;
+      response.end("done");
+    }, 40);
+  });
+
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.notEqual(address, null);
+  assert.equal(typeof address, "object");
+
+  try {
+    if (!address || typeof address === "string") return;
+    await Promise.all(
+      Array.from({ length: 48 }, () =>
+        createChromeFetch().get(`http://127.0.0.1:${address.port}/`),
+      ),
+    );
+
+    assert.ok(
+      peakActiveRequests >= 8,
+      `expected concurrent requests, saw only ${peakActiveRequests}`,
+    );
+    assert.ok(
+      peakActiveRequests <= 16,
+      `expected the pool to cap concurrency, saw ${peakActiveRequests}`,
+    );
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+});
+
+test("reused pooled connections do not mix user cookies or responses", async () => {
+  const seenCookies: string[] = [];
+  let connections = 0;
+  const server = createServer((request, response) => {
+    const cookie = request.headers.cookie ?? "";
+    seenCookies.push(cookie);
+    response.end(`response-for:${cookie}`);
+  });
+  server.on("connection", () => {
+    connections += 1;
+  });
+
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert.notEqual(address, null);
+  assert.equal(typeof address, "object");
+
+  try {
+    if (!address || typeof address === "string") return;
+    const url = `http://127.0.0.1:${address.port}/private`;
+    const expectedCookies = Array.from(
+      { length: 20 },
+      (_, index) => `session=user-${index}`,
+    );
+
+    for (const cookie of expectedCookies) {
+      const client = createChromeFetch([
+        {
+          name: "session",
+          value: cookie.slice("session=".length),
+          domain: "127.0.0.1",
+          path: "/",
+        },
+      ]);
+      const response = await client.get(url);
+      assert.equal(await response.text(), `response-for:${cookie}`);
+    }
+
+    assert.deepEqual(seenCookies, expectedCookies);
+    assert.ok(
+      connections <= 16,
+      `expected pooled connection reuse, saw ${connections} connections`,
+    );
+  } finally {
+    server.closeAllConnections();
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => (error ? reject(error) : resolve()));
+    });
+  }
+});
+
 test("POST supplies Origin and a 302 downgrade clears body headers", async () => {
   const mocked = mockFetch((_call, index) =>
     index === 0
@@ -111,6 +204,7 @@ test("POST supplies Origin and a 302 downgrade clears body headers", async () =>
     const firstHeaders = new Headers(mocked.calls[0]?.init.headers);
     const redirectedHeaders = new Headers(mocked.calls[1]?.init.headers);
     assert.equal(firstHeaders.get("origin"), "https://portal.school.edu.tw");
+    assert.equal(mocked.calls[0]?.init.cache, "no-store");
     assert.equal(mocked.calls[1]?.init.method, "GET");
     assert.equal(mocked.calls[1]?.init.body, undefined);
     assert.equal(redirectedHeaders.has("content-type"), false);
