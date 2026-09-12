@@ -1,17 +1,11 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
+import { createChromeFetch } from "@/components/px_items/chromeFetch";
 import { type NextRequest, NextResponse } from "next/server";
-import {
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+import { endpoint, getBrowserCookies } from "@/components/univeralComponents";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const GET = async (request: NextRequest) => {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
   let statusCode = 500;
 
   try {
@@ -37,11 +31,9 @@ export const GET = async (request: NextRequest) => {
     const buildURLParams = new URLSearchParams();
     buildURLParams.append("example", "example");
 
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
+    const client = createChromeFetch(browserCookies);
 
-    const response = await context.request.post(endpoint(apiUrl, "/"), {
+    const response = await client.post(endpoint(apiUrl, "/"), {
       data: buildURLParams.toString(),
       headers: {
         "X-Requested-With": "XMLHttpRequest",
@@ -66,8 +58,5 @@ export const GET = async (request: NextRequest) => {
         status: statusCode,
       },
     );
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 };

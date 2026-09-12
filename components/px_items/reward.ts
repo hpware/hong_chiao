@@ -1,49 +1,38 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import {
-  USER_AGENT,
-  endpoint,
-  type BrowserCookieType,
-} from "@/components/univeralComponents";
+  createChromeFetch,
+  type UpstreamCookies,
+} from "@/components/px_items/chromeFetch";
+import { endpoint } from "@/components/univeralComponents";
 
 export default async function GetReward(
-  browserCookies: BrowserCookieType,
+  browserCookies: UpstreamCookies,
   year: string,
   semistry: string,
 ) {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
+  const apiUrl = process.env.API_URL;
 
-  try {
-    const apiUrl = process.env.API_URL;
-
-    if (!apiUrl) {
-      throw new Error(
-        "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
-      );
-    }
-
-    const buildURLParams = new URLSearchParams();
-    buildURLParams.append("ppYear", year);
-    buildURLParams.append("ppSemi", semistry);
-
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.post(
-      endpoint(apiUrl, "/YSCStu/YSCStu/YSCStuMain_Qry"),
-      {
-        data: buildURLParams.toString(),
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        },
-      },
+  if (!apiUrl) {
+    throw new Error(
+      "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
     );
-
-    return JSON.parse(await response.text());
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
+
+  const buildURLParams = new URLSearchParams();
+  buildURLParams.append("ppYear", year);
+  buildURLParams.append("ppSemi", semistry);
+
+  const client = createChromeFetch(browserCookies);
+
+  const response = await client.post(
+    endpoint(apiUrl, "/YSCStu/YSCStu/YSCStuMain_Qry"),
+    {
+      data: buildURLParams.toString(),
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+    },
+  );
+
+  return JSON.parse(await response.text());
 }

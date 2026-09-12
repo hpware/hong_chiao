@@ -1,11 +1,12 @@
-import { chromium } from "playwright";
 import { type NextRequest, NextResponse } from "next/server";
 import {
-  USER_AGENT,
+  createChromeFetch,
+  type UpstreamCookies,
+} from "@/components/px_items/chromeFetch";
+import {
   endpoint,
   getRequestCookies,
   getHiddenInputValue,
-  type BrowserCookieType,
 } from "@/components/univeralComponents";
 
 type LoginRequestBody = {
@@ -18,7 +19,7 @@ export default async function LoginFunction(
   username: string,
   password: string,
   captcha: string,
-  browserCookies: BrowserCookieType,
+  browserCookies: UpstreamCookies,
 ) {
   const rawUrl = process.env.API_URL;
 
@@ -26,14 +27,10 @@ export default async function LoginFunction(
     throw new Error("API_URL is not set.");
   }
   const apiUrl = rawUrl;
-  const origin = new URL(apiUrl).origin;
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ userAgent: USER_AGENT });
+  const client = createChromeFetch(browserCookies);
 
   try {
-    await context.addCookies(browserCookies);
-
-    const loginPage = await context.request.get(
+    const loginPage = await client.get(
       endpoint(apiUrl, "/B2KPortal/Login.aspx"),
     );
     const loginPageHTML = await loginPage.text();
@@ -53,7 +50,7 @@ export default async function LoginFunction(
     form.append("ValidateCode", captcha);
     form.append("ClearLock", "0");
 
-    const loginResponse = await context.request.post(
+    const loginResponse = await client.post(
       endpoint(apiUrl, "/B2KPortal/Login.aspx"),
       {
         data: form.toString(),
@@ -64,17 +61,16 @@ export default async function LoginFunction(
     );
     const html = await loginResponse.text();
     const hdfText = getHiddenInputValue(html, "hdfMessage");
-    const sessionCookies = await context.cookies(origin);
+    const sessionCookies = client.cookies();
     return {
-      success:
-        loginResponse.url() !== endpoint(apiUrl, "/B2KPortal/Login.aspx"),
-      remoteStatus: loginResponse.status(),
-      statusText: loginResponse.statusText(),
-      url: loginResponse.url(),
+      success: loginResponse.url !== endpoint(apiUrl, "/B2KPortal/Login.aspx"),
+      remoteStatus: loginResponse.status,
+      statusText: loginResponse.statusText,
+      url: loginResponse.url,
       hdfText,
-      changePasswordNotice: loginResponse
-        .url()
-        .endsWith("/Account/ChangePassword"),
+      changePasswordNotice: loginResponse.url.endsWith(
+        "/Account/ChangePassword",
+      ),
       setCookies: sessionCookies,
       error: hdfText,
     };
@@ -89,8 +85,5 @@ export default async function LoginFunction(
       setCookies: [],
       error: e.message,
     };
-  } finally {
-    await context.close();
-    await browser.close();
   }
 }

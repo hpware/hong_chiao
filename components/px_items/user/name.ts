@@ -1,15 +1,11 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
-import { type NextRequest, NextResponse } from "next/server";
 import {
-  BrowserCookieType,
-  USER_AGENT,
-  endpoint,
-  getBrowserCookies,
-} from "@/components/univeralComponents";
+  createChromeFetch,
+  type UpstreamCookies,
+} from "@/components/px_items/chromeFetch";
+import { type NextRequest, NextResponse } from "next/server";
+import { endpoint, getBrowserCookies } from "@/components/univeralComponents";
 
-export default async function GetUserName(browserCookies: BrowserCookieType) {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
+export default async function GetUserName(browserCookies: UpstreamCookies) {
   let statusCode = 500;
 
   try {
@@ -21,11 +17,9 @@ export default async function GetUserName(browserCookies: BrowserCookieType) {
       );
     }
     statusCode = 500;
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
+    const client = createChromeFetch(browserCookies);
 
-    const response = await context.request.get(
+    const response = await client.get(
       endpoint(apiUrl, "/YStuQuery/YStuQuery/YSDStuMain"),
       {
         headers: {
@@ -54,8 +48,5 @@ export default async function GetUserName(browserCookies: BrowserCookieType) {
       error: e.message,
       name: null,
     };
-  } finally {
-    await context?.close();
-    await browser?.close();
   }
 }

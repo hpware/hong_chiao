@@ -26,16 +26,6 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-
-# Install production dependencies, Playwright's bundled Chromium, and the
-# matching Debian runtime libraries in the final image.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN corepack enable \
-  && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 pnpm install --prod --frozen-lockfile \
-  && pnpm exec playwright install --with-deps chromium \
-  && pnpm store prune \
-  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./

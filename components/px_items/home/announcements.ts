@@ -1,9 +1,9 @@
-import { chromium, type Browser, type BrowserContext } from "playwright";
 import {
-  USER_AGENT,
-  endpoint,
-  type BrowserCookieType,
-} from "@/components/univeralComponents";
+  createChromeFetch,
+  type UpstreamCookies,
+} from "@/components/px_items/chromeFetch";
+import { load } from "cheerio";
+import { endpoint } from "@/components/univeralComponents";
 
 type Announcement = {
   unit: string;
@@ -11,81 +11,72 @@ type Announcement = {
   content: string;
 };
 
+function normalizeText(text: string | null | undefined) {
+  return text?.replace(/\u00a0/g, " ").trim() ?? "";
+}
+
+function splitLines(text: string) {
+  return text.split(/\r?\n/).flatMap((line) => {
+    const trimmedLine = line.trim();
+    return trimmedLine ? [trimmedLine] : [];
+  });
+}
+
 export default async function GetAnnouncements(
-  browserCookies: BrowserCookieType,
+  browserCookies: UpstreamCookies,
 ) {
-  let browser: Browser | undefined;
-  let context: BrowserContext | undefined;
+  const apiUrl = process.env.API_URL;
 
-  try {
-    const apiUrl = process.env.API_URL;
-
-    if (!apiUrl) {
-      throw new Error(
-        "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
-      );
-    }
-
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ userAgent: USER_AGENT });
-    await context.addCookies(browserCookies);
-
-    const response = await context.request.get(endpoint(apiUrl, "/B2KPortal"), {
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-    });
-    if (response.status() !== 200) {
-      throw new Error("It seems like you are logged out?");
-    }
-
-    const page = await context.newPage();
-    try {
-      await page.setContent(await response.text());
-      return await page.evaluate<Announcement[]>(() => {
-        const normalizeText = (text: string | null | undefined) =>
-          text?.replace(/\u00a0/g, " ").trim() ?? "";
-
-        const splitLines = (text: string) =>
-          text
-            .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter(Boolean);
-
-        const table = document.querySelector("#tblistOfAnnounce");
-        if (!table) return [];
-
-        return Array.from(table.querySelectorAll("tbody tr"))
-          .map((row) => {
-            const cells = Array.from(row.querySelectorAll("td"));
-            const [unitCell, dateCell, topicCell] = cells;
-            const labels = Array.from(
-              topicCell?.querySelectorAll("label") ?? [],
-            )
-              .map((label) => normalizeText(label.textContent))
-              .filter(Boolean);
-            const [title = "", ...contentLabels] = labels;
-            const content = contentLabels.flatMap(splitLines);
-
-            return {
-              unit: normalizeText(unitCell?.textContent),
-              date: normalizeText(dateCell?.textContent),
-              content: [title, ...content].filter(Boolean).join("\n"),
-            };
-          })
-          .filter(
-            (announcement) =>
-              announcement.unit ||
-              announcement.date ||
-              announcement.content.length > 0,
-          );
-      });
-    } finally {
-      await page.close();
-    }
-  } finally {
-    await context?.close();
-    await browser?.close();
+  if (!apiUrl) {
+    throw new Error(
+      "伺服器管理員缺少 API_URL 的環境變數設定，請詢問伺服器管理員。",
+    );
   }
+
+  const client = createChromeFetch(browserCookies);
+
+  const response = await client.get(endpoint(apiUrl, "/B2KPortal"), {
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    },
+  });
+  if (response.status !== 200) {
+    throw new Error("It seems like you are logged out?");
+  }
+
+  const $ = load(await response.text());
+  return $("#tblistOfAnnounce tbody tr")
+    .toArray()
+    .reduce<Announcement[]>((announcements, row) => {
+      const cells = $(row).find("td").toArray();
+      const [unitCell, dateCell, topicCell] = cells;
+      const labels = topicCell
+        ? $(topicCell)
+            .find("label")
+            .toArray()
+            .flatMap((label) => {
+              const text = normalizeText($(label).text());
+              return text ? [text] : [];
+            })
+        : [];
+      const [title = "", ...contentLabels] = labels;
+      const announcement = {
+        unit: normalizeText(unitCell ? $(unitCell).text() : ""),
+        date: normalizeText(dateCell ? $(dateCell).text() : ""),
+        content: [
+          ...(title ? [title] : []),
+          ...contentLabels.flatMap(splitLines),
+        ].join("\n"),
+      };
+
+      if (
+        announcement.unit ||
+        announcement.date ||
+        announcement.content.length > 0
+      ) {
+        announcements.push(announcement);
+      }
+      return announcements;
+    }, []);
 }
