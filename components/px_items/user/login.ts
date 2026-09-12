@@ -27,7 +27,6 @@ export default async function LoginFunction(
     throw new Error("API_URL is not set.");
   }
   const apiUrl = rawUrl;
-  const origin = new URL(apiUrl).origin;
   const client = createChromeFetch(browserCookies);
 
   try {
@@ -62,7 +61,7 @@ export default async function LoginFunction(
     );
     const html = await loginResponse.text();
     const hdfText = getHiddenInputValue(html, "hdfMessage");
-    const sessionCookies = client.cookies(origin);
+    const sessionCookies = client.cookies();
     return {
       success: loginResponse.url !== endpoint(apiUrl, "/B2KPortal/Login.aspx"),
       remoteStatus: loginResponse.status,
