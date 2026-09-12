@@ -36,12 +36,19 @@ export default async function FetchUserSemisters(
     const html = await response.text();
     const parseAllUserSemis = [
       ...html.matchAll(/SemiYear="(\d+)"\s+Semi="(\d+)"/g),
-    ].map((match) => {
-      return {
-        year: match[1],
-        semi: match[2],
-      };
-    });
+    ]
+      .map((match) => {
+        return {
+          year: match[1],
+          semi: match[2],
+        };
+      })
+      // Newest semester first. These are regex capture groups, so they are
+      // strings — compare them as numbers rather than lexically.
+      .sort(
+        (a, b) =>
+          Number(b.year) - Number(a.year) || Number(b.semi) - Number(a.semi),
+      );
     return parseAllUserSemis;
   } finally {
     await context?.close();
