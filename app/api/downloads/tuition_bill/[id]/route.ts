@@ -33,6 +33,7 @@ export const GET = async (
       return Response.json({ error: "下載參數無效。" }, { status: 400 });
     }
 
+    // check auth
     const browserCookies = await getBrowserCookies(
       request,
       401,

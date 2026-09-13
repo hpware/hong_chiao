@@ -1,12 +1,17 @@
 "use client";
 
 import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { PdfViewer } from "@/components/pdf-viewer";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 
-export default function ProofViewer({ id, name }: { id: string; name: string }) {
+export default function ProofViewer({
+  id,
+  name,
+}: {
+  id: string;
+  name: string;
+}) {
   const { theme } = useTheme();
   const pdfUrl = `/api/downloads/tuition_bill/${encodeURIComponent(id)}?${new URLSearchParams(
     { type: "Temp", fileName: name },
@@ -21,11 +26,15 @@ export default function ProofViewer({ id, name }: { id: string; name: string }) 
             {name}
           </p>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/tuition/proof-of-payment">
-            <ArrowLeft />
-            重新選擇
-          </Link>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            history.back();
+          }}
+        >
+          <ArrowLeft />
+          重新選擇
         </Button>
       </header>
 
