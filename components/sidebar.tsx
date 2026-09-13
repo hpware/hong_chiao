@@ -168,6 +168,7 @@ function MainSidebarContent({ pathname }: { pathname: string }) {
   const renewQuery = useQuery(
     trpc.user.renewTimer.queryOptions(undefined, {
       refetchInterval: 10 * 60 * 1000,
+      retryDelay: 3 * 1000,
     }),
   );
   // On an expired/invalid session the procedure throws UNAUTHORIZED — kick to logout.

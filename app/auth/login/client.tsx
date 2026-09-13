@@ -34,6 +34,11 @@ export default function Client() {
   const [username, setUsername] = useState("");
   const isExpired = params.get("expired") === "true";
   const prefillUserId = params.get("prefill") === "true";
+  const [warningLabelItems, setWarningLabelItems] = useState({
+    account: false,
+    password: false,
+    captcha: false,
+  });
   // check login status
   const { error: updateSessionError, isLoading: updateSessionLoading } =
     useQuery(
