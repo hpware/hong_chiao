@@ -51,20 +51,16 @@ import {
 } from "lucide-react";
 import { Tooltip } from "./ui/tooltip";
 import { toast } from "sonner";
-
-type AiSettings = {
-  apiUrl: string;
-  apiToken: string;
-  aiModel: string;
-  aiBypassCors: boolean;
-};
-
-type ChartSpec = {
-  chartType: "bar" | "line" | "pie";
-  title: string;
-  label: string;
-  points: { name: string; value: number }[];
-};
+import {
+  DEFAULT_AI_SETTINGS,
+  deleteAiChat,
+  getAiChat,
+  getAiSettings,
+  saveAiChat,
+  type AiChartSpec,
+  type AiChatMessage,
+  type AiSettings,
+} from "@/lib/ai-storage";
 
 const pageDestinations = {
   home: { href: "/", label: "首頁" },
@@ -81,15 +77,6 @@ const pageDestinations = {
 } as const;
 
 type PageDestinationId = keyof typeof pageDestinations;
-
-function readAiSettings(): AiSettings {
-  return {
-    apiUrl: localStorage.getItem("ai_apiUrl") ?? "",
-    apiToken: localStorage.getItem("ai_apiToken") ?? "",
-    aiModel: localStorage.getItem("ai_model") ?? "",
-    aiBypassCors: localStorage.getItem("ai_bypassCors") === "true",
-  };
-}
 
 export default function AiSidebar({
   aiOpen,
@@ -129,7 +116,20 @@ export default function AiSidebar({
 function Panel({ onClose }: { onClose?: () => void }) {
   const [settings, setSettings] = useState<AiSettings | null>(null);
   useEffect(() => {
-    setSettings(readAiSettings());
+    let active = true;
+    void getAiSettings()
+      .then((stored) => {
+        if (active) setSettings(stored);
+      })
+      .catch(() => {
+        if (active) {
+          setSettings(DEFAULT_AI_SETTINGS);
+          toast.error("無法讀取 IndexedDB 裡的 AI 設定。");
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const missingSettings =
@@ -446,7 +446,7 @@ function startBrowserDownload(href: string, fileName: string) {
   link.remove();
 }
 
-function parseChartSpec(args: Record<string, unknown>): ChartSpec {
+function parseChartSpec(args: Record<string, unknown>): AiChartSpec {
   const chartType = args.chartType;
   if (chartType !== "bar" && chartType !== "line" && chartType !== "pie")
     throw new Error("chartType 只支援 bar, line 或 pie");
@@ -474,13 +474,8 @@ function Chat({ settings }: { settings: AiSettings }) {
   const trpc = useTRPC();
   const trpcClient = useTRPCClient();
   const queryClient = useQueryClient();
-  const [messages, setMessages] = useState<
-    {
-      role: "user" | "assistant" | "tool" | "chart";
-      content: string;
-      chart?: ChartSpec;
-    }[]
-  >([]);
+  const [messages, setMessages] = useState<AiChatMessage[]>([]);
+  const [chatLoaded, setChatLoaded] = useState(false);
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -492,26 +487,36 @@ function Chat({ settings }: { settings: AiSettings }) {
   );
   // auto load Chat
   useEffect(() => {
-    const saved = localStorage.getItem("ai_chat");
-    if (saved) {
-      try {
-        setMessages(JSON.parse(saved));
-      } catch {
-        toast.error("無法存取 localStorage 的聊天記錄，系統已自動移除。");
-        localStorage.removeItem("ai_chat");
-      }
-    }
+    let active = true;
+    void getAiChat()
+      .then((saved) => {
+        if (active) setMessages(saved);
+      })
+      .catch(() => {
+        if (active) toast.error("無法讀取 IndexedDB 裡的聊天記錄。");
+      })
+      .finally(() => {
+        if (active) setChatLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
-  // auto save chat to localStorage.
+  // auto save chat to IndexedDB.
   useEffect(() => {
+    if (!chatLoaded) return;
     if (messages.length === 0) {
-      localStorage.removeItem("ai_chat");
+      void deleteAiChat().catch(() => {
+        toast.error("無法清除 IndexedDB 裡的聊天記錄。");
+      });
       return;
     }
-    if (messages[messages.length - 1].role === "assistant") {
-      localStorage.setItem("ai_chat", JSON.stringify(messages));
+    if (!loading && messages[messages.length - 1].role === "assistant") {
+      void saveAiChat(messages).catch(() => {
+        toast.error("無法將聊天記錄儲存至 IndexedDB。");
+      });
     }
-  }, [messages]);
+  }, [chatLoaded, loading, messages]);
 
   const directUrl = settings.apiUrl.trim().replace(/\/+$/, "");
   // 直連模式才需要瀏覽器端的 OpenAI client；
@@ -940,7 +945,7 @@ const PIE_COLORS: DitherColor[] = [
   "red",
 ];
 
-const AiChart = memo(function AiChart({ chart }: { chart: ChartSpec }) {
+const AiChart = memo(function AiChart({ chart }: { chart: AiChartSpec }) {
   if (chart.chartType === "pie") {
     const config: ChartConfig = {};
     chart.points.forEach((point, i) => {
