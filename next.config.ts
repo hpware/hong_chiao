@@ -1,25 +1,20 @@
 import type { NextConfig } from "next";
 import { execFileSync } from "node:child_process";
+import { resolveBuildCommitSha } from "./lib/build-commit.ts";
 import packageJson from "./package.json";
 
-function getCommitSha(): string {
-  if (process.env.BUILD_COMMIT_SHA) return process.env.BUILD_COMMIT_SHA;
-
-  try {
-    return execFileSync("git", ["rev-parse", "HEAD"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return "unknown";
-  }
-}
+const commitSha = resolveBuildCommitSha(process.env.BUILD_COMMIT_SHA, () =>
+  execFileSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  }),
+);
 
 const nextConfig: NextConfig = {
   output: "standalone",
   env: {
     APP_VERSION: packageJson.version,
-    APP_COMMIT_SHA: getCommitSha(),
+    APP_COMMIT_SHA: commitSha,
   },
 };
 
