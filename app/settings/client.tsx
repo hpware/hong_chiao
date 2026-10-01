@@ -18,6 +18,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import {
+  DEFAULT_AI_SETTINGS,
+  getAiSettings,
+  saveAiSettings,
+  type AiSettings,
+} from "@/lib/ai-storage";
 
 export default function Client() {
   const trpc = useTRPC();
@@ -199,23 +205,38 @@ function ChangeSiteSettingsOnThisDevice() {
   const [displaySecureDetails, setDisplaySecureDetails] = useState({
     token: false,
   });
-  const [preSetDetails, setPreSetDetails] = useState({
-    apiUrl: "",
-    apiToken: "",
-    aiModel: "",
-    aiBypassCors: "",
-    aiDisabled: "",
-  });
+  const [preSetDetails, setPreSetDetails] = useState<AiSettings | null>(null);
 
   useEffect(() => {
-    setPreSetDetails({
-      apiUrl: localStorage.getItem("ai_apiUrl") ?? "",
-      apiToken: localStorage.getItem("ai_apiToken") ?? "",
-      aiModel: localStorage.getItem("ai_model") ?? "",
-      aiBypassCors: localStorage.getItem("ai_bypassCors") ?? "",
-      aiDisabled: localStorage.getItem("ai_disabled") ?? "",
-    });
+    let active = true;
+    void getAiSettings()
+      .then((settings) => {
+        if (active) setPreSetDetails(settings);
+      })
+      .catch(() => {
+        if (active) {
+          setPreSetDetails(DEFAULT_AI_SETTINGS);
+          toast.error("無法讀取 IndexedDB 裡的 AI 設定。");
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, []);
+
+  if (preSetDetails === null) {
+    return (
+      <div className="border rounded p-2 text-sm text-muted-foreground">
+        正在載入網站設定...
+      </div>
+    );
+  }
+
+  const updatePreSetDetails = (update: Partial<AiSettings>) => {
+    setPreSetDetails((previous) =>
+      previous === null ? previous : { ...previous, ...update },
+    );
+  };
 
   return (
     <div className="border rounded p-2">
@@ -231,20 +252,20 @@ function ChangeSiteSettingsOnThisDevice() {
               const apiUrl = preSetDetails.apiUrl.trim();
               const apiToken = preSetDetails.apiToken.trim();
               const aiModel = preSetDetails.aiModel.trim();
-              const aiBypassCors =
-                preSetDetails.aiBypassCors === "true" ? "true" : "false";
-              const aiDisabled =
-                preSetDetails.aiDisabled === "true" ? "true" : "false";
-              if (aiDisabled !== "true" && (!apiUrl || !apiToken || !aiModel))
+              const aiBypassCors = preSetDetails.aiBypassCors;
+              const aiDisabled = preSetDetails.aiDisabled;
+              if (!aiDisabled && (!apiUrl || !apiToken || !aiModel))
                 throw new Error("API URL, API Token 和 Model 都必須填寫");
-              if (aiDisabled !== "true" && !apiUrl.startsWith("https://"))
+              if (!aiDisabled && !apiUrl.startsWith("https://"))
                 throw new Error("API URL 一定要是 https:// 開頭");
               // save
-              localStorage.setItem("ai_apiUrl", apiUrl);
-              localStorage.setItem("ai_apiToken", apiToken);
-              localStorage.setItem("ai_model", aiModel);
-              localStorage.setItem("ai_bypassCors", aiBypassCors);
-              localStorage.setItem("ai_disabled", aiDisabled);
+              await saveAiSettings({
+                apiUrl,
+                apiToken,
+                aiModel,
+                aiBypassCors,
+                aiDisabled,
+              });
               window.dispatchEvent(new Event("ai-settings-changed"));
               setPreSetDetails({
                 apiUrl,
@@ -269,12 +290,9 @@ function ChangeSiteSettingsOnThisDevice() {
           <Switch
             size="lg"
             name="aiDisabled"
-            checked={preSetDetails.aiDisabled === "false"}
+            checked={!preSetDetails.aiDisabled}
             onCheckedChange={(checked) => {
-              setPreSetDetails((prev) => ({
-                ...prev,
-                aiDisabled: checked ? "false" : "true",
-              }));
+              updatePreSetDetails({ aiDisabled: !checked });
             }}
           />
         </div>
@@ -289,12 +307,9 @@ function ChangeSiteSettingsOnThisDevice() {
               name="ai_ApiUrl"
               type="text"
               value={preSetDetails.apiUrl}
-              disabled={preSetDetails.aiDisabled === "true"}
+              disabled={preSetDetails.aiDisabled}
               onChange={(e) => {
-                setPreSetDetails((prev) => ({
-                  ...prev,
-                  apiUrl: e.target.value,
-                }));
+                updatePreSetDetails({ apiUrl: e.target.value });
               }}
             />
           </div>
@@ -310,19 +325,16 @@ function ChangeSiteSettingsOnThisDevice() {
               name="ai_ApiToken"
               type={displaySecureDetails.token ? "text" : "password"}
               value={preSetDetails.apiToken}
-              disabled={preSetDetails.aiDisabled === "true"}
+              disabled={preSetDetails.aiDisabled}
               onChange={(e) => {
-                setPreSetDetails((prev) => ({
-                  ...prev,
-                  apiToken: e.target.value,
-                }));
+                updatePreSetDetails({ apiToken: e.target.value });
               }}
             />
             <Button
               type="button"
               variant="outline"
               size="icon"
-              disabled={preSetDetails.aiDisabled === "true"}
+              disabled={preSetDetails.aiDisabled}
               onClick={() => {
                 setDisplaySecureDetails((prev) => ({
                   ...prev,
@@ -346,12 +358,9 @@ function ChangeSiteSettingsOnThisDevice() {
               name="ai_Model"
               type="text"
               value={preSetDetails.aiModel}
-              disabled={preSetDetails.aiDisabled === "true"}
+              disabled={preSetDetails.aiDisabled}
               onChange={(e) => {
-                setPreSetDetails((prev) => ({
-                  ...prev,
-                  aiModel: e.target.value,
-                }));
+                updatePreSetDetails({ aiModel: e.target.value });
               }}
             />
           </div>
@@ -367,13 +376,10 @@ function ChangeSiteSettingsOnThisDevice() {
           <Switch
             id="ai-bypass-cors"
             name="aiBypassCors"
-            disabled={preSetDetails.aiDisabled === "true"}
-            checked={preSetDetails.aiBypassCors === "true"}
+            disabled={preSetDetails.aiDisabled}
+            checked={preSetDetails.aiBypassCors}
             onCheckedChange={(checked) => {
-              setPreSetDetails((prev) => ({
-                ...prev,
-                aiBypassCors: checked ? "true" : "false",
-              }));
+              updatePreSetDetails({ aiBypassCors: checked });
             }}
           />
         </div>

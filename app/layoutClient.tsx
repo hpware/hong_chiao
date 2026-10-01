@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BotIcon } from "lucide-react";
 import AiSidebar from "@/components/ai_sidebar";
+import { getAiSettings } from "@/lib/ai-storage";
 //NEXT_PUBLIC_APP_URL
 export default function Client({
   children,
@@ -30,16 +31,23 @@ export default function Client({
 
   const [aiDisabled, setAiDisabled] = useState(true);
   useEffect(() => {
-    const readDisabled = () => {
-      const disabled = localStorage.getItem("ai_disabled");
-      if (disabled === null) localStorage.setItem("ai_disabled", "true"); // default disable AI features.
-      setAiDisabled(disabled !== "false");
+    let active = true;
+    const readDisabled = async () => {
+      try {
+        const settings = await getAiSettings();
+        if (active) setAiDisabled(settings.aiDisabled);
+      } catch {
+        if (active) setAiDisabled(true);
+      }
     };
-    readDisabled();
+    void readDisabled();
     // 設定頁儲存後會發出這個事件，讓 AI 按鈕不用重新整理就出現
-    window.addEventListener("ai-settings-changed", readDisabled);
-    return () =>
-      window.removeEventListener("ai-settings-changed", readDisabled);
+    const handleSettingsChanged = () => void readDisabled();
+    window.addEventListener("ai-settings-changed", handleSettingsChanged);
+    return () => {
+      active = false;
+      window.removeEventListener("ai-settings-changed", handleSettingsChanged);
+    };
   }, []);
   return (
     <TRPCReactProvider>
