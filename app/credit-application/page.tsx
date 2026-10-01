@@ -58,7 +58,14 @@ export default function Page() {
             { header: "承辦單位", accessorKey: "UnOrgText" },
             { header: "開始日期", accessorKey: "StartDate" },
             { header: "結束日期", accessorKey: "EndDate" },
-            { header: "上傳期限", accessorKey: "UpLoadDate" },
+            {
+              header: "上傳期限",
+              accessorKey: "UpLoadDate",
+              cell: ({ row }) =>
+                row.original.UpLoadDate === "999/12/31"
+                  ? row.original.EndDate
+                  : row.original.UpLoadDate,
+            },
             { header: "名額", accessorKey: "Quota" },
             { header: "申請", accessorKey: "Apply" },
             {
@@ -77,9 +84,7 @@ export default function Page() {
                         <ExternalLink className="size-3.5" />
                       </Button>
                     </Link>
-                  ) : (
-                    <span className="text-muted-foreground">無</span>
-                  )}
+                  ) : null}
                   <Link
                     href="/credit-application/apply/[id]"
                     as={`/credit-application/apply/${row.original.objid}`}
