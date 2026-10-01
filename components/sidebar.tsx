@@ -71,7 +71,7 @@ const navItems = [
     title: "學費",
     items: [
       {
-        title: "查詢學費與申請證明",
+        title: "查詢學費及申請證明",
         href: "/tuition",
         icon: BinocularsIcon,
         workInProgress: false,
