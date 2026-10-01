@@ -27,9 +27,9 @@ export default function Page() {
             {commitSha && commitSha !== "unknown" ? (
               <a
                 href={`https://github.com/hpware/hong_chiao/commit/${commitSha}`}
-                className="font-mono break-all underline"
+                className="font-mono underline"
               >
-                {commitSha}
+                {commitSha.slice(0, 7)}
               </a>
             ) : (
               <span className="font-mono">unknown</span>
