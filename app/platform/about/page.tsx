@@ -1,24 +1,14 @@
 import type { Metadata } from "next";
-import { readFileSync } from "fs";
 import Link from "next/link";
-import { resolve } from "path";
+import nextPackage from "next/package.json";
 
 export const metadata: Metadata = {
   title: "關於",
 };
 
-function getPackageVersion(pkgPath: string): string {
-  try {
-    const json = JSON.parse(readFileSync(resolve(pkgPath), "utf-8"));
-    return json.version ?? "unknown";
-  } catch {
-    return "unknown";
-  }
-}
-
 export default function Page() {
-  const appVersion = getPackageVersion("./package.json");
-  const nextVersion = getPackageVersion("./node_modules/next/package.json");
+  const appVersion = process.env.APP_VERSION;
+  const commitSha = process.env.APP_COMMIT_SHA;
 
   return (
     <div>
@@ -33,8 +23,21 @@ export default function Page() {
             <span className="font-mono">{appVersion}</span>
           </div>
           <div>
+            <span>伺服器 Commit：</span>
+            {commitSha && commitSha !== "unknown" ? (
+              <a
+                href={`https://github.com/hpware/hong_chiao/commit/${commitSha}`}
+                className="font-mono underline"
+              >
+                {commitSha.slice(0, 7)}
+              </a>
+            ) : (
+              <span className="font-mono">unknown</span>
+            )}
+          </div>
+          <div>
             <span>Next.js 版本：</span>
-            <span className="font-mono">{nextVersion}</span>
+            <span className="font-mono">{nextPackage.version}</span>
           </div>
         </div>
         <div className="flex flex-col pt-2">

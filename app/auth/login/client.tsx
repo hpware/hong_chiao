@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/tooltip";
 
 export default function Client() {
+  const commitSha = process.env.APP_COMMIT_SHA;
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -109,6 +110,17 @@ export default function Client() {
           >
             網站 Source Code
           </a>
+          {commitSha && commitSha !== "unknown" && (
+            <>
+              {" · "}
+              <a
+                href={`https://github.com/hpware/hong_chiao/commit/${commitSha}`}
+                className="font-mono hover:text-blue-200 transition-colors duration-100"
+              >
+                {commitSha.slice(0, 7)}
+              </a>
+            </>
+          )}
         </span>
       </div>
       <div className="absolute inset-0 justify-center items-center flex flex-col">
