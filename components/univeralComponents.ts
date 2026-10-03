@@ -10,6 +10,13 @@ export const authCookieNames = [
   "ssLoginName",
 ] as const;
 
+export class MissingSessionError extends Error {
+  constructor(cookieName: string) {
+    super(`No session found: missing ${cookieName}`);
+    this.name = "MissingSessionError";
+  }
+}
+
 export function endpoint(apiUrl: string, path: string): string {
   const base = new URL(apiUrl.endsWith("/") ? apiUrl : `${apiUrl}/`);
   const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
@@ -27,7 +34,7 @@ export async function getBrowserCookies(
 
     if (value === undefined) {
       statusCode = 401;
-      throw new Error(`No session found: missing ${cookieName}`);
+      throw new MissingSessionError(cookieName);
     }
 
     return {

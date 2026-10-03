@@ -4,10 +4,9 @@ import Table from "@/components/table";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Building,
   CalendarClock,
-  CalendarOffIcon,
-  Trash2Icon,
+  CalendarDays,
+  ChevronLeft,
   UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -16,6 +15,7 @@ import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
 import { useTRPC } from "@/trpc/client";
 import ErrorNotFound from "@/components/error";
+import DocList from "./doc-list";
 import {
   AI_CREDIT_APPLICATION_DRAFT_EVENT,
   getAiCreditApplicationDraftKey,
@@ -106,6 +106,8 @@ export default function Client({ id }: { id: string }) {
       );
   }, [id]);
 
+  const application = getApplyDetails?.data?.[0];
+
   if (error) {
     return (
       <div className="pt-2">
@@ -130,45 +132,67 @@ export default function Client({ id }: { id: string }) {
   }
 
   return (
-    <div className="pt-2">
-      <div className="p-2">
-        <h1 className="text-xl font-semibold">
+    <div className="space-y-5 p-4 sm:p-6">
+      <header className="space-y-5 border-b pb-5">
+        <div className="space-y-3">
           <Link
-            href="../"
-            className="underline hover:text-blue-500 dark:hover:text-blue-200"
+            href="/credit-application"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
           >
+            <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
             獎學金
-          </Link>{" "}
-          / {getApplyDetails?.data[0].Title ?? "載入中..."}
-        </h1>
-        <p className="text-sm text-muted-foreground">申請獎學金。</p>
-      </div>
-      <section className="flex flex-col space-x-4 p-2">
-        {getApplyDetails?.data.length > 0 ? (
-          <div>
-            <div className="flex flex-col lg:flex-row space-x-2">
-              <span className="flex flex-row">
-                <UserIcon />
-                &nbsp;{getApplyDetails?.data[0].UnPerText} (
-                {getApplyDetails?.data[0].UnOrgText})
-              </span>
-              <span className="flex flex-row">
-                <CalendarClock />
-                &nbsp;申請範圍: {getApplyDetails?.data[0].StartDate}~
-                {getApplyDetails?.data[0].EndDate}
-              </span>
-              <span className="flex flex-row">
-                <CalendarOffIcon />
-                &nbsp;上傳期限: {getApplyDetails?.data[0].UpLoadDate}
-              </span>
+          </Link>
+          <h1 className="break-words text-xl font-semibold leading-snug tracking-tight sm:text-2xl">
+            {application?.Title ?? "載入中..."}
+          </h1>
+        </div>
+        {application ? (
+          <dl className="grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
+            <div className="min-w-0 sm:col-span-2 xl:col-span-1">
+              <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <UserIcon className="size-4 shrink-0" aria-hidden="true" />
+                承辦資訊
+              </dt>
+              <dd className="mt-1.5 space-y-1 pl-6">
+                <span className="block font-medium">
+                  {application.UnPerText}
+                </span>
+                <span className="block break-words text-muted-foreground">
+                  {application.UnOrgText}
+                </span>
+              </dd>
             </div>
-            <span className="text-sm">
-              備註: {getApplyDetails?.data[0].Memo}
-            </span>
-            <hr />
-          </div>
+            <div className="min-w-0">
+              <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
+                申請期間
+              </dt>
+              <dd className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 pl-6 font-medium tabular-nums">
+                <span>{application.StartDate}</span>
+                <span className="text-muted-foreground">至</span>
+                <span>{application.EndDate}</span>
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <CalendarClock className="size-4 shrink-0" aria-hidden="true" />
+                上傳期限
+              </dt>
+              <dd className="mt-1.5 pl-6 font-medium tabular-nums">
+                {application.UpLoadDate}
+              </dd>
+            </div>
+          </dl>
         ) : null}
-        <div className="mt-4 space-y-2">
+      </header>
+      <section className="space-y-4">
+        <DocList documents={application?.DocList ?? []} />
+        {application?.Memo ? (
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            備註：{application.Memo}
+          </p>
+        ) : null}
+        <div className="space-y-2">
           <label
             htmlFor="credit-application-description"
             className="text-sm font-medium"
@@ -191,7 +215,6 @@ export default function Client({ id }: { id: string }) {
         </div>
         {/*{JSON.stringify(getApplyDetails)} */}
       </section>
-      <div className="h-full justify-center p-2"></div>
     </div>
   );
 }

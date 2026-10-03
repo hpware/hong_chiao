@@ -1,7 +1,7 @@
 "use client";
 
 import { skipToken, useMutation, useQuery } from "@tanstack/react-query";
-import { Receipt } from "lucide-react";
+import { BadgeDollarSignIcon, Receipt } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { memo, useCallback } from "react";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
 import type { AppRouter } from "@/trpc/routers/_app";
 import type { inferRouterOutputs } from "@trpc/server";
+import Link from "next/link";
 
 // getBatches resolves with an async generator, so the router output is the
 // generator itself — unwrap it to the type of a single yielded semester.
@@ -66,9 +67,7 @@ const SemesterCard = memo(function SemesterCard(props: {
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-0.5">
           <h2 className="font-medium">{formatSemester(year, semistry)}</h2>
-          <p className="text-xs text-muted-foreground">
-            抵免、已繳與補退金額
-          </p>
+          <p className="text-xs text-muted-foreground">抵免、已繳與補退金額</p>
           {details ? (
             <p
               className={`text-xs ${balance === 0 ? "text-muted-foreground" : balance > 0 ? "text-red-700 dark:text-red-300" : "text-green-700 dark:text-green-300"}`}
@@ -81,16 +80,30 @@ const SemesterCard = memo(function SemesterCard(props: {
             </p>
           ) : null}
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={isGeneratingProof}
-          onClick={() => getProofOfPayment(year, semistry)}
-        >
-          <Receipt aria-hidden="true" />
-          繳費證明
-        </Button>
+        {balance <= 0 ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={isGeneratingProof}
+            onClick={() => getProofOfPayment(year, semistry)}
+          >
+            <Receipt aria-hidden="true" />
+            繳費證明
+          </Button>
+        ) : (
+          <Button asChild size="sm" variant="outline">
+            <Link
+              href={{
+                pathname: "/tuition/bill",
+                query: { year, semester: semistry },
+              }}
+            >
+              <BadgeDollarSignIcon aria-hidden="true" />
+              繳費
+            </Link>
+          </Button>
+        )}
       </header>
       {!entry && isStreaming ? (
         <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">

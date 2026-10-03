@@ -71,7 +71,7 @@ const navItems = [
     title: "學費",
     items: [
       {
-        title: "查詢學費資訊",
+        title: "查詢學費及申請證明",
         href: "/tuition",
         icon: BinocularsIcon,
         workInProgress: false,
@@ -82,12 +82,12 @@ const navItems = [
         icon: ReceiptIcon,
         workInProgress: true,
       },
-      {
-        title: "繳費證明",
-        href: "/tuition/proof-of-payment",
-        icon: ReceiptIcon,
-        workInProgress: false,
-      },
+      //{
+      //  title: "繳費證明",
+      //  href: "/tuition/proof-of-payment",
+      //  icon: ReceiptIcon,
+      //  workInProgress: false,
+      //},
       {
         title: "抵免申請",
         href: "/tuition/discount",

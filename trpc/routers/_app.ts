@@ -659,25 +659,34 @@ export const appRouter = createTRPCRouter({
         };
       }),
     }),
-    billDownloadId: baseProcedure.query(async () => {
-      const year = new Date().getFullYear();
-      const month = new Date().getMonth();
-      const rocYear = year - 1911;
-      let semisterYear: number = rocYear;
-      let semister: boolean = false; // false => 第一學期 | true => 第二學期
-      if (month > 2 && month < 7) {
-        semisterYear = rocYear - 1;
-        semister = true;
-      }
-      const apiUrl = requireApiUrl();
-      const { browserCookies } = await requireBrowserCookies(apiUrl);
-      const data = await GetBill(
-        browserCookies,
-        String(semisterYear),
-        !semister ? "1" : "2",
-      );
-      return data;
-    }),
+    billDownloadId: baseProcedure
+      .input(
+        z
+          .object({
+            year: z.number().int().positive(),
+            semester: z.union([z.literal(1), z.literal(2)]),
+          })
+          .optional(),
+      )
+      .query(async ({ input }) => {
+        const year = new Date().getFullYear();
+        const month = new Date().getMonth();
+        const rocYear = year - 1911;
+        let semisterYear: number = rocYear;
+        let semister: boolean = false; // false => 第一學期 | true => 第二學期
+        if (month > 2 && month < 7) {
+          semisterYear = rocYear - 1;
+          semister = true;
+        }
+        const apiUrl = requireApiUrl();
+        const { browserCookies } = await requireBrowserCookies(apiUrl);
+        const data = await GetBill(
+          browserCookies,
+          String(input?.year ?? semisterYear),
+          input ? String(input.semester) : !semister ? "1" : "2",
+        );
+        return data;
+      }),
     proofDownloadId: baseProcedure
       .input(
         z.object({
@@ -744,18 +753,19 @@ export const appRouter = createTRPCRouter({
         const data = await GetCreditApplications(browserCookies, opts.input.id);
 
         if (!data.OK) throwUnauthorized(data.MSG || expiredSessionMessage);
-        if (data.obj.length === 0) {
+        const rows = Array.isArray(data.obj)
+          ? data.obj
+          : Array.isArray(data.obj?.DataList)
+            ? data.obj.DataList
+            : data.obj && typeof data.obj === "object" && data.obj.objid != null
+              ? [data.obj]
+              : [];
+        if (rows.length === 0) {
           throw new TRPCError({
             message: "此 Object ID 沒有任何資訊 😥",
             code: "NOT_FOUND",
           });
         }
-        const rows = Array.isArray(data.obj)
-          ? data.obj
-          : Array.isArray(data.obj?.DataList)
-            ? data.obj.DataList
-            : [];
-
         return {
           success: data.OK,
           errMsg: data.MSG,

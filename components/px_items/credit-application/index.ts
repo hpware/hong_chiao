@@ -18,7 +18,10 @@ export default async function GetCreditApplications(
 
   const buildURLParams = new URLSearchParams();
   buildURLParams.append("ppqmodel[IsStu]", "1");
-  if (objectId !== "all") buildURLParams.append("ppqmodel[objid]", objectId);
+  if (objectId !== "all") {
+    buildURLParams.append("ppqmodel[objid]", objectId);
+    buildURLParams.append("ppqmodel[IsDtl]", "1");
+  }
 
   const client = createChromeFetch(browserCookies);
 
