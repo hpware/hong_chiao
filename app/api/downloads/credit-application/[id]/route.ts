@@ -27,7 +27,7 @@ export const GET = async (
     const { id } = await websiteContext.params;
     const parsedParams = downloadParamsSchema.safeParse({
       id,
-      fileName: request.nextUrl.searchParams.get("fileName"),
+      fileName: request.nextUrl.searchParams.get("fileName") ?? undefined,
     });
     if (!parsedParams.success) {
       return Response.json({ error: "下載參數無效。" }, { status: 400 });
