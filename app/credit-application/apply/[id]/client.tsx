@@ -15,6 +15,7 @@ import { getSemesterFromDate } from "@/lib/semester";
 import Link from "next/link";
 import { useTRPC } from "@/trpc/client";
 import ErrorNotFound from "@/components/error";
+import DocList from "./doc-list";
 import {
   AI_CREDIT_APPLICATION_DRAFT_EVENT,
   getAiCreditApplicationDraftKey,
@@ -185,6 +186,7 @@ export default function Client({ id }: { id: string }) {
         ) : null}
       </header>
       <section className="space-y-4">
+        <DocList documents={application?.DocList ?? []} />
         {application?.Memo ? (
           <p className="text-sm leading-relaxed text-muted-foreground">
             備註：{application.Memo}

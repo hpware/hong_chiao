@@ -92,18 +92,17 @@ const SemesterCard = memo(function SemesterCard(props: {
             繳費證明
           </Button>
         ) : (
-          <Link href="/tuition/bill">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={isGeneratingProof}
-              onClick={() => getProofOfPayment(year, semistry)}
+          <Button asChild size="sm" variant="outline">
+            <Link
+              href={{
+                pathname: "/tuition/bill",
+                query: { year, semester: semistry },
+              }}
             >
               <BadgeDollarSignIcon aria-hidden="true" />
               繳費
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         )}
       </header>
       {!entry && isStreaming ? (
