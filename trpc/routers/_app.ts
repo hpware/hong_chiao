@@ -753,18 +753,19 @@ export const appRouter = createTRPCRouter({
         const data = await GetCreditApplications(browserCookies, opts.input.id);
 
         if (!data.OK) throwUnauthorized(data.MSG || expiredSessionMessage);
-        if (data.obj.length === 0) {
+        const rows = Array.isArray(data.obj)
+          ? data.obj
+          : Array.isArray(data.obj?.DataList)
+            ? data.obj.DataList
+            : data.obj && typeof data.obj === "object" && data.obj.objid != null
+              ? [data.obj]
+              : [];
+        if (rows.length === 0) {
           throw new TRPCError({
             message: "此 Object ID 沒有任何資訊 😥",
             code: "NOT_FOUND",
           });
         }
-        const rows = Array.isArray(data.obj)
-          ? data.obj
-          : Array.isArray(data.obj?.DataList)
-            ? data.obj.DataList
-            : [];
-
         return {
           success: data.OK,
           errMsg: data.MSG,

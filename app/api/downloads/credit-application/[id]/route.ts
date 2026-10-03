@@ -1,5 +1,8 @@
 import DownloadPDFFromCreditApplicaiton from "@/components/px_items/credit-application/download";
-import { getBrowserCookies } from "@/components/univeralComponents";
+import {
+  getBrowserCookies,
+  MissingSessionError,
+} from "@/components/univeralComponents";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
@@ -67,6 +70,9 @@ export const GET = async (
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "下載檔案失敗。";
-    return Response.json({ error: message }, { status: 502 });
+    return Response.json(
+      { error: message },
+      { status: error instanceof MissingSessionError ? 401 : 502 },
+    );
   }
 };

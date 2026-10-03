@@ -80,7 +80,7 @@ const SemesterCard = memo(function SemesterCard(props: {
             </p>
           ) : null}
         </div>
-        {balance == 0 ? (
+        {balance <= 0 ? (
           <Button
             type="button"
             size="sm"
