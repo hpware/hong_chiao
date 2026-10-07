@@ -12,6 +12,7 @@ import {
 // bill / discount / reward / tuition
 
 import GetBill from "@/components/px_items/bill/index";
+import GetBillBalance from "@/components/px_items/bill/balance";
 import GetBillProof from "@/components/px_items/bill/proof";
 import GetDiscount from "@/components/px_items/discount";
 import GetReward from "@/components/px_items/reward";
@@ -681,6 +682,34 @@ export const appRouter = createTRPCRouter({
         const apiUrl = requireApiUrl();
         const { browserCookies } = await requireBrowserCookies(apiUrl);
         const data = await GetBill(
+          browserCookies,
+          String(input?.year ?? semisterYear),
+          input ? String(input.semester) : !semister ? "1" : "2",
+        );
+        return data;
+      }),
+    billBalanceDownloadId: baseProcedure
+      .input(
+        z
+          .object({
+            year: z.number().int().positive(),
+            semester: z.union([z.literal(1), z.literal(2)]),
+          })
+          .optional(),
+      )
+      .query(async ({ input }) => {
+        const year = new Date().getFullYear();
+        const month = new Date().getMonth();
+        const rocYear = year - 1911;
+        let semisterYear: number = rocYear;
+        let semister: boolean = false; // false => 第一學期 | true => 第二學期
+        if (month > 2 && month < 7) {
+          semisterYear = rocYear - 1;
+          semister = true;
+        }
+        const apiUrl = requireApiUrl();
+        const { browserCookies } = await requireBrowserCookies(apiUrl);
+        const data = await GetBillBalance(
           browserCookies,
           String(input?.year ?? semisterYear),
           input ? String(input.semester) : !semister ? "1" : "2",

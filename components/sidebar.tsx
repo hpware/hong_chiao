@@ -82,6 +82,12 @@ const navItems = [
         icon: ReceiptIcon,
         workInProgress: true,
       },
+      {
+        title: "補繳費單",
+        href: "/tuition/bill-balance",
+        icon: ReceiptIcon,
+        workInProgress: true,
+      },
       //{
       //  title: "繳費證明",
       //  href: "/tuition/proof-of-payment",

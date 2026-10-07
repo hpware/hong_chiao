@@ -80,30 +80,43 @@ const SemesterCard = memo(function SemesterCard(props: {
             </p>
           ) : null}
         </div>
-        {balance <= 0 ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={isGeneratingProof}
-            onClick={() => getProofOfPayment(year, semistry)}
-          >
-            <Receipt aria-hidden="true" />
-            繳費證明
-          </Button>
-        ) : (
+        <div className="flex flex-wrap justify-end gap-2">
           <Button asChild size="sm" variant="outline">
             <Link
               href={{
-                pathname: "/tuition/bill",
+                pathname: "/tuition/bill-balance",
                 query: { year, semester: semistry },
               }}
             >
-              <BadgeDollarSignIcon aria-hidden="true" />
-              繳費
+              <Receipt aria-hidden="true" />
+              補繳費單
             </Link>
           </Button>
-        )}
+          {balance <= 0 ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={isGeneratingProof}
+              onClick={() => getProofOfPayment(year, semistry)}
+            >
+              <Receipt aria-hidden="true" />
+              繳費證明
+            </Button>
+          ) : (
+            <Button asChild size="sm" variant="outline">
+              <Link
+                href={{
+                  pathname: "/tuition/bill",
+                  query: { year, semester: semistry },
+                }}
+              >
+                <BadgeDollarSignIcon aria-hidden="true" />
+                繳費
+              </Link>
+            </Button>
+          )}
+        </div>
       </header>
       {!entry && isStreaming ? (
         <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
