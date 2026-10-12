@@ -1,6 +1,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { apiLimit, clientIp } from "@/lib/rate-limit";
+import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 
 /**
  * This context creator accepts `headers` so it can be reused in both
@@ -27,8 +27,8 @@ const t = initTRPC
 export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
 export const baseProcedure = t.procedure.use(async ({ ctx, next }) => {
-  if (process.env.ENABLE_RATE_LIMIT?.toLocaleUpperCase() === "TRUE") {
-    const result = await apiLimit.limit(clientIp(ctx.headers));
+  {
+    const result = await checkRateLimit(clientIp(ctx.headers));
 
     if (!result.success) {
       throw new TRPCError({

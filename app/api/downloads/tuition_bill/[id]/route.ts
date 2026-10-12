@@ -2,6 +2,7 @@ import GetBillDownload from "@/components/px_items/bill/download";
 import { getBrowserCookies } from "@/components/univeralComponents";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
+import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,16 @@ export const GET = async (
   websiteContext: { params: Promise<{ id: string }> },
 ) => {
   try {
+    {
+      const result = await checkRateLimit(clientIp(request.headers));
+      if (!result.success) {
+        return Response.json(
+          { error: "請求過於頻繁，請稍後再試。" },
+          { status: 429, headers: { "Retry-After": "60" } },
+        );
+      }
+    }
+
     const rawUrl = process.env.API_URL;
     if (!rawUrl) {
       return Response.json(
