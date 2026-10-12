@@ -27,7 +27,14 @@ type RedisValue = string | number | null | RedisValue[];
 export type RateLimitResult = { success: boolean; limit: number; remaining: number; reset: number };
 
 function redisUrl(): URL {
-  const url = new URL(process.env.REDIS_URL ?? "redis://127.0.0.1:6379");
+  let url: URL;
+  try {
+    url = new URL(process.env.REDIS_URL ?? "redis://127.0.0.1:6379");
+  } catch (error: unknown) {
+    throw new Error("REDIS_URL must be a valid redis:// URL", {
+      cause: error,
+    });
+  }
   if (url.protocol !== "redis:" || url.username || url.password ||
       (url.pathname !== "" && url.pathname !== "/" && url.pathname !== "/0") ||
       url.search || url.hash) {
