@@ -2,7 +2,7 @@ import { z } from "zod";
 import OpenAI from "openai";
 import { cookies } from "next/headers";
 import { TRPCError } from "@trpc/server";
-import { baseProcedure, createTRPCRouter } from "../init";
+import { baseProcedure, ipLimitedProcedure, createTRPCRouter } from "../init";
 // tRPC tools
 import {
   trpcGetBrowserCookies as getBrowserCookies,
@@ -842,7 +842,7 @@ export const appRouter = createTRPCRouter({
   }),
   // auth/user
   user: createTRPCRouter({
-    getCaptcha: baseProcedure
+    getCaptcha: ipLimitedProcedure
       .meta({
         useBatchLink: true,
       })
@@ -893,7 +893,7 @@ export const appRouter = createTRPCRouter({
           duration: (Date.now() - startTime) / 1000,
         };
       }),
-    login: baseProcedure
+    login: ipLimitedProcedure
       .input(
         z.object({
           username: z.string(),

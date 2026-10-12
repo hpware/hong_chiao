@@ -28,7 +28,7 @@ for (const outcome of ["allowed", "limited", "redis-error", "invalid-ip", "upstr
           if (outcome === "upstream-error") throw new Error("Remote logout failed");
         };
         if (name === "@/lib/rate-limit") return {
-          clientIp() {
+          rateLimitIdentifier() {
             if (outcome === "invalid-ip") throw new Error("Trusted proxy must supply a valid X-Real-IP");
             return "192.0.2.1";
           },

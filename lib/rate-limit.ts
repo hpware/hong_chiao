@@ -1,4 +1,19 @@
 import { connect, isIP } from "node:net";
+import { createHash } from "node:crypto";
+
+export type RateLimitScope = "ip" | "session";
+
+export function rateLimitIdentifier(
+  headers: Headers,
+  sessionId?: string,
+  scope: RateLimitScope = "session",
+): string {
+  if (!isRateLimitEnabled()) return "";
+  if (scope === "session" && sessionId) {
+    return `session:${createHash("sha256").update(sessionId).digest("hex")}`;
+  }
+  return `ip:${clientIp(headers)}`;
+}
 
 const WINDOW_MS = 60_000;
 const REQUEST_LIMIT = 80;

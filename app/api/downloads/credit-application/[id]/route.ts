@@ -5,7 +5,7 @@ import {
 } from "@/components/univeralComponents";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
-import { checkRateLimit, clientIp } from "@/lib/rate-limit";
+import { checkRateLimit, rateLimitIdentifier } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +21,12 @@ export const GET = async (
 ) => {
   try {
     {
-      const result = await checkRateLimit(clientIp(request.headers));
+      const result = await checkRateLimit(
+        rateLimitIdentifier(
+          request.headers,
+          request.cookies.get("ASP.NET_SessionId")?.value,
+        ),
+      );
       if (!result.success) {
         return Response.json(
           { error: "請求過於頻繁，請稍後再試。" },
