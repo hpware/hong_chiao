@@ -21,6 +21,7 @@ rate_limit_enabled="$(printf '%s' "${ENABLE_RATE_LIMIT:-}" | tr '[:upper:]' '[:l
 case "$rate_limit_enabled" in
   1|true|yes|on)
     check_required REDIS_URL
+    check_required RATE_LIMIT_PROXY_SECRET
     ;;
 esac
 

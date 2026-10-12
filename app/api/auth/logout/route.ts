@@ -23,20 +23,13 @@ function redirectToLogin(request: NextRequest, isExpired = false) {
 }
 
 export const GET = async (request: NextRequest) => {
-  {
-    const result = await checkRateLimit(clientIp(request.headers));
-    if (!result.success) {
-      return Response.json(
-        { error: "請求過於頻繁，請稍後再試。" },
-        { status: 429, headers: { "Retry-After": "60" } },
-      );
-    }
-  }
-
   const params = request.nextUrl.searchParams;
   const isExpired = params.get("expired") === "true";
 
   try {
+    const result = await checkRateLimit(clientIp(request.headers));
+    if (!result.success) return redirectToLogin(request, isExpired);
+
     const rawUrl = process.env.API_URL;
     if (!rawUrl) {
       throw new Error(
