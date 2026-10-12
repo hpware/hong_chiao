@@ -14,15 +14,14 @@ All of the APIs are in yaak/, install yaak and then import the yaak folder, then
 
 `ENABLE_RATE_LIMIT` defaults to `false`; normal `docker compose up -d` does not start Redis or wait for it.
 
-Before enabling the limiter, put the app behind a trusted reverse proxy. Generate a secret with `openssl rand -hex 32`, set it as `RATE_LIMIT_PROXY_SECRET` on the app, and configure the proxy to **overwrite** both headers on every request (never forward client-supplied values). For example, in an nginx proxy location:
+Before enabling the limiter, put the app behind a trusted reverse proxy that **overwrites** `X-Real-IP` on every request (never forward the client-supplied value). For example, in an nginx proxy location on the Docker host:
 
 ```nginx
 proxy_set_header X-Real-IP $remote_addr;
-proxy_set_header X-Rate-Limit-Proxy-Secret "<same generated secret>";
 proxy_pass http://127.0.0.1:10419;
 ```
 
-Keep the secret server-side and restrict the app port to the proxy with firewall rules or a loopback binding (`127.0.0.1:10419:3000` for a proxy on the Docker host). Use a private network or TLS between proxy and app. If nginx is itself behind another proxy, configure its trusted client-address handling first. The limiter accepts only authenticated proxy requests with a valid `X-Real-IP`; it does not fall back to `X-Forwarded-For` or a shared unknown-client quota.
+Both Compose files bind the app port to `127.0.0.1:10419`, so remote callers must go through the proxy on the Docker host. For a containerized proxy, use a private Docker network and remove the published app port; for a proxy on another host, restrict app access to that proxy with firewall rules. Do not expose the app port publicly when limiting is enabled: the app trusts `X-Real-IP` and cannot verify who set it. If nginx is itself behind another proxy, configure its trusted client-address handling first. Missing or invalid `X-Real-IP` values are rejected; there is no fallback to `X-Forwarded-For` or a shared unknown-client quota.
 
 Set `ENABLE_RATE_LIMIT=true`. For bundled Redis, use `REDIS_URL=redis://redis:6379` and start with `docker compose --profile rate-limit up -d` (add `-f docker-compose.prod.yml` before `--profile` for the published image). For external Redis, set `REDIS_URL` and omit the profile. There is no Redis startup dependency; while Redis is unavailable, limited operations fail, but local logout still clears cookies and redirects.
 

@@ -11,13 +11,12 @@ services:
   service:
     image: ghcr.io/hpware/hong_chiao:latest
     ports:
-      - "10419:3000"
+      - "127.0.0.1:10419:3000"
     environment:
       API_URL: ${API_URL}
       NEXT_PUBLIC_SCHOOL_NAME: ${NEXT_PUBLIC_SCHOOL_NAME}
       WCFY_API_URL: ${WCFY_API_URL} # 給下載用的
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       NEXT_PUBLIC_OWNER_EMAIL: ${NEXT_PUBLIC_OWNER_EMAIL}
-      RATE_LIMIT_PROXY_SECRET: ${RATE_LIMIT_PROXY_SECRET:-}
       ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-false}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}

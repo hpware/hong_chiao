@@ -1,5 +1,4 @@
 import { connect, isIP } from "node:net";
-import { timingSafeEqual } from "node:crypto";
 
 const WINDOW_MS = 60_000;
 const REQUEST_LIMIT = 80;
@@ -24,9 +23,6 @@ function redisUrl(): URL {
 
 export function validateRateLimitConfig(): void {
   if (!isRateLimitEnabled()) return;
-  if (!process.env.RATE_LIMIT_PROXY_SECRET?.trim()) {
-    throw new Error("Rate limiting requires RATE_LIMIT_PROXY_SECRET and a trusted proxy that overwrites X-Rate-Limit-Proxy-Secret and X-Real-IP");
-  }
   redisUrl();
 }
 
@@ -109,11 +105,7 @@ export async function checkRateLimit(identifier: string): Promise<RateLimitResul
 export function clientIp(headers: Headers): string {
   if (!isRateLimitEnabled()) return "";
   validateRateLimitConfig();
-  const expected = Buffer.from(process.env.RATE_LIMIT_PROXY_SECRET!);
-  const supplied = Buffer.from(headers.get("x-rate-limit-proxy-secret") ?? "");
-  if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) {
-    throw new Error("Rate limiting requires a request from the trusted proxy");
-  }
+  // Only deploy behind a trusted proxy that overwrites this header and blocks direct access.
   const ip = headers.get("x-real-ip")?.trim();
   if (!ip || !isIP(ip)) throw new Error("Trusted proxy must supply a valid X-Real-IP");
   // Canonicalize equivalent IPv6 spellings so they use the same quota.

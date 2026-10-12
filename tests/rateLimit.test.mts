@@ -7,13 +7,9 @@ test("rate limiter proxy and Redis regressions", async (t) => {
   const original = { ...process.env };
   t.after(() => { process.env = original; });
   process.env.ENABLE_RATE_LIMIT = "true";
-  process.env.RATE_LIMIT_PROXY_SECRET = "test-proxy-secret";
   process.env.REDIS_URL = "redis://localhost:6379";
 
-  await t.test("requires configured proxy and rejects unsupported Redis URL fields", () => {
-    delete process.env.RATE_LIMIT_PROXY_SECRET;
-    assert.throws(validateRateLimitConfig, /trusted proxy/);
-    process.env.RATE_LIMIT_PROXY_SECRET = "test-proxy-secret";
+  await t.test("rejects unsupported Redis URL fields", () => {
     for (const url of ["rediss://localhost", "redis://user:pass@localhost", "redis://localhost/1", "redis://localhost?db=1", "https://localhost"]) {
       process.env.REDIS_URL = url;
       assert.throws(validateRateLimitConfig, /REDIS_URL/);
@@ -22,9 +18,8 @@ test("rate limiter proxy and Redis regressions", async (t) => {
     assert.doesNotThrow(validateRateLimitConfig);
   });
 
-  await t.test("untrusted headers cannot choose a quota; missing addresses cannot share one", () => {
-    assert.throws(() => clientIp(new Headers({ "x-real-ip": "192.0.2.1" })), /trusted proxy/);
-    const headers = new Headers({ "x-rate-limit-proxy-secret": "test-proxy-secret" });
+  await t.test("uses the proxy IP; missing or invalid addresses cannot share a quota", () => {
+    const headers = new Headers();
     assert.throws(() => clientIp(headers), /valid X-Real-IP/);
     headers.set("x-forwarded-for", "192.0.2.2");
     assert.throws(() => clientIp(headers), /valid X-Real-IP/);
@@ -89,7 +84,6 @@ test("rate limiter proxy and Redis regressions", async (t) => {
 
   await t.test("disabled limiter needs neither proxy nor Redis", async () => {
     process.env.ENABLE_RATE_LIMIT = "false";
-    delete process.env.RATE_LIMIT_PROXY_SECRET;
     process.env.REDIS_URL = "invalid";
     assert.doesNotThrow(validateRateLimitConfig);
     assert.equal(clientIp(new Headers()), "");

@@ -12,7 +12,7 @@ const source = ts.transpileModule(readFileSync(new URL("../app/api/auth/logout/r
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
 }).outputText;
 
-for (const outcome of ["allowed", "limited", "redis-error", "proxy-error", "upstream-error"] as const) {
+for (const outcome of ["allowed", "limited", "redis-error", "invalid-ip", "upstream-error"] as const) {
   test(`logout clears cookies and redirects when ${outcome}`, async () => {
     let remoteCalls = 0;
     const exports: { GET?: (request: NextRequest) => Promise<NextResponse> } = {};
@@ -29,7 +29,7 @@ for (const outcome of ["allowed", "limited", "redis-error", "proxy-error", "upst
         };
         if (name === "@/lib/rate-limit") return {
           clientIp() {
-            if (outcome === "proxy-error") throw new Error("Untrusted proxy");
+            if (outcome === "invalid-ip") throw new Error("Trusted proxy must supply a valid X-Real-IP");
             return "192.0.2.1";
           },
           async checkRateLimit() {
