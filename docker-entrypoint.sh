@@ -17,6 +17,13 @@ check_required API_URL
 check_required NEXT_PUBLIC_APP_URL
 check_required NEXT_PUBLIC_OWNER_EMAIL
 
+rate_limit_enabled="$(printf '%s' "${ENABLE_RATE_LIMIT:-}" | tr '[:upper:]' '[:lower:]')"
+case "$rate_limit_enabled" in
+  1|true|yes|on)
+    check_required REDIS_URL
+    ;;
+esac
+
 if [ "$(printf '%s' "${NEXT_PUBLIC_OWNER_EMAIL:-}" | tr -d '[:space:]')" = "changeme@example.com" ]; then
   missing="${missing}NEXT_PUBLIC_OWNER_EMAIL (still set to changeme@example.com)
 "

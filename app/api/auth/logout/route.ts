@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { authCookieNames } from "@/components/univeralComponents";
 import LogoutRemote from "@/components/px_items/user/logout";
+import { checkRateLimit, rateLimitIdentifier } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,14 @@ export const GET = async (request: NextRequest) => {
   const isExpired = params.get("expired") === "true";
 
   try {
+    const result = await checkRateLimit(
+      rateLimitIdentifier(
+        request.headers,
+        request.cookies.get("ASP.NET_SessionId")?.value,
+      ),
+    );
+    if (!result.success) return redirectToLogin(request, isExpired);
+
     const rawUrl = process.env.API_URL;
     if (!rawUrl) {
       throw new Error(
