@@ -1,6 +1,5 @@
 services:
   redis:
-    profiles: ["rate-limit"]
     image: redis:7-alpine
     restart: unless-stopped
     healthcheck:
@@ -10,12 +9,12 @@ services:
       retries: 10
   service:
     image: ghcr.io/hpware/hong_chiao:latest
+    restart: unless-stopped
     ports:
       - "127.0.0.1:10419:3000"
     environment:
       API_URL: ${API_URL}
       NEXT_PUBLIC_SCHOOL_NAME: ${NEXT_PUBLIC_SCHOOL_NAME}
-      WCFY_API_URL: ${WCFY_API_URL} # 給下載用的
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       NEXT_PUBLIC_OWNER_EMAIL: ${NEXT_PUBLIC_OWNER_EMAIL}
       ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-false}

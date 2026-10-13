@@ -81,17 +81,6 @@ const SemesterCard = memo(function SemesterCard(props: {
           ) : null}
         </div>
         <div className="flex flex-wrap justify-end gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link
-              href={{
-                pathname: "/tuition/bill-balance",
-                query: { year, semester: semistry },
-              }}
-            >
-              <Receipt aria-hidden="true" />
-              補繳費單
-            </Link>
-          </Button>
           {balance <= 0 ? (
             <Button
               type="button"
