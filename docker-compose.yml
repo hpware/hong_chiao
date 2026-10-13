@@ -1,12 +1,4 @@
 services:
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
   service:
     build: .
     ports:
@@ -18,3 +10,12 @@ services:
       NEXT_PUBLIC_OWNER_EMAIL: ${NEXT_PUBLIC_OWNER_EMAIL}
       ENABLE_RATE_LIMIT: ${ENABLE_RATE_LIMIT:-false}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+  #---------- ENABLE IF YOU WANT RATE LIMITING ---------------
+  #redis:
+  #  image: redis:7-alpine
+  #  restart: unless-stopped
+  #  healthcheck:
+  #    test: ["CMD", "redis-cli", "ping"]
+  #    interval: 5s
+  #    timeout: 3s
+  #    retries: 10
