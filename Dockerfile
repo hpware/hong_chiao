@@ -14,12 +14,18 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 ARG BUILD_COMMIT_SHA
+ARG BUILD_VERSION
+ENV BUILD_COMMIT_SHA=$BUILD_COMMIT_SHA
+ENV BUILD_VERSION=$BUILD_VERSION
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p public
 RUN pnpm run build
 RUN if [ -n "$BUILD_COMMIT_SHA" ]; then \
       grep -Fq "$BUILD_COMMIT_SHA" .next/server/app/platform/about.html; \
+    fi
+RUN if [ -n "$BUILD_VERSION" ]; then \
+      grep -Fq "$BUILD_VERSION" .next/server/app/platform/about.html; \
     fi
 
 # prod
