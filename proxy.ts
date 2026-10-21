@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { authCookieNames } from "@/components/univeralComponents";
 
-const publicPaths = new Set(["/auth/login", "/auth/ask"]);
+const publicPaths = new Set(["/auth/login", "/auth/ask", "/platform/about"]);
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

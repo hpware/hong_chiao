@@ -49,6 +49,7 @@ jobs:
           file: ./Dockerfile
           build-args: |
             BUILD_COMMIT_SHA=${{ github.sha }}
+            BUILD_VERSION=${{ github.ref_name }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

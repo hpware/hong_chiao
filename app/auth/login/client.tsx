@@ -24,9 +24,82 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { isExactReleaseVersion } from "@/lib/build-version";
+
+function getDisplayVersion(
+  appVersion?: string,
+  commitSha?: string,
+): string | null {
+  if (isExactReleaseVersion(appVersion)) return appVersion ?? null;
+  if (commitSha && commitSha !== "unknown") return commitSha.slice(0, 7);
+  if (appVersion && appVersion !== "unknown" && appVersion !== "0.0.0") {
+    return appVersion;
+  }
+  return null;
+}
+
+function getVersionUrl(appVersion?: string, commitSha?: string): string {
+  if (isExactReleaseVersion(appVersion) && appVersion) {
+    const tag = appVersion.startsWith("v") ? appVersion : `v${appVersion}`;
+    return `https://github.com/hpware/hong_chiao/releases/tag/${tag}`;
+  }
+  if (commitSha && commitSha !== "unknown") {
+    return `https://github.com/hpware/hong_chiao/commit/${commitSha}`;
+  }
+  return "https://github.com/hpware/hong_chiao";
+}
+
+function LoginFooter({
+  appVersion,
+  commitSha,
+}: {
+  appVersion?: string;
+  commitSha?: string;
+}) {
+  const displayVersion = getDisplayVersion(appVersion, commitSha);
+  const versionUrl = getVersionUrl(appVersion, commitSha);
+  const commitTitle =
+    commitSha && commitSha !== "unknown" ? `Commit: ${commitSha}` : undefined;
+
+  return (
+    <span className="absolute bottom-2 right-2 text-xs text-accent-foreground/70 z-50 select-none">
+      照片來自{" "}
+      <Link
+        href="https://unsplash.com/photos/mountains-covered-with-fogs-580TcQCVJ_4?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText"
+        className="hover:text-blue-200 transition-colors duration-100 cursor-pointer"
+      >
+        Unsplash
+      </Link>
+      。{" "}
+      <a
+        href="https://github.com/hpware/hong_chiao"
+        target="_blank"
+        className="hover:text-blue-200 transition-colors duration-100 cursor-pointer"
+      >
+        網站 Source Code
+      </a>
+      {displayVersion && (
+        <>
+          {" · "}
+          <a
+            href={versionUrl}
+            target="_blank"
+            rel="noreferrer"
+            title={commitTitle}
+            className="font-mono hover:text-blue-200 transition-colors duration-100"
+          >
+            {displayVersion}
+          </a>
+        </>
+      )}
+    </span>
+  );
+}
 
 export default function Client() {
+  const appVersion = process.env.APP_VERSION;
   const commitSha = process.env.APP_COMMIT_SHA;
+
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -80,7 +153,7 @@ export default function Client() {
   useEffect(() => {
     if (error === null) return;
     toast.error(
-      `Captcha 錯誤: "${failureReason}" 已重式${failureCount}次，請聯絡主機管理員維修此問題！ (並非學校電算中心!)`,
+      `Captcha 錯誤: "${failureReason}" 已重試${failureCount}次，請聯絡主機管理員維修此問題！ (並非學校電算中心!)`,
     );
   }, [error]);
 
@@ -94,34 +167,7 @@ export default function Client() {
           alt="Background image"
           className="fixed inset-0 z-0 object-cover object-center filter blur-sm opacity-50 w-screen h-screen select-none"
         />
-        <span className="absolute bottom-2 right-2 text-xs text-accent-foreground/70 z-50 select-none">
-          照片來自{" "}
-          <Link
-            href="https://unsplash.com/photos/mountains-covered-with-fogs-580TcQCVJ_4?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText"
-            className="hover:text-blue-200 transition-all duration-100 cursor-pointer"
-          >
-            Unsplash
-          </Link>
-          。{" "}
-          <a
-            href="https://github.com/hpware/hong_chiao"
-            target="_blank"
-            className="hover:text-blue-200 transition-all duration-100 cursor-pointer"
-          >
-            網站 Source Code
-          </a>
-          {commitSha && commitSha !== "unknown" && (
-            <>
-              {" · "}
-              <a
-                href={`https://github.com/hpware/hong_chiao/commit/${commitSha}`}
-                className="font-mono hover:text-blue-200 transition-colors duration-100"
-              >
-                {commitSha.slice(0, 7)}
-              </a>
-            </>
-          )}
-        </span>
+        <LoginFooter appVersion={appVersion} commitSha={commitSha} />
       </div>
       <div className="absolute inset-0 justify-center items-center flex flex-col">
         <div className="justify-center border-2 rounded-lg p-8 shadow-xl bg-accent/80 z-50">
