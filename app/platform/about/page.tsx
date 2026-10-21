@@ -3,7 +3,7 @@ import Link from "next/link";
 import nextPackage from "next/package.json";
 import reactPackage from "react/package.json";
 import { isExactReleaseVersion } from "@/lib/build-version";
-import { ExternalLink, GitCommit, GitPullRequest, Info, Server, Shield } from "lucide-react";
+import { ExternalLink, GitCommit, GitPullRequest, Server, Shield } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "關於",
@@ -115,18 +115,6 @@ export default function Page() {
               <span className="font-medium truncate max-w-[180px]">{schoolName}</span>
             </div>
           </div>
-        </div>
-
-        {/* 平台介紹 */}
-        <div className="rounded-lg border bg-card p-4 space-y-2">
-          <div className="flex items-center gap-2 font-medium">
-            <Info className="h-4 w-4 text-muted-foreground" />
-            <span>關於 Hong Chiao (紅橋)</span>
-          </div>
-          <p className="text-muted-foreground leading-relaxed">
-            Hong Chiao
-            是一個專為大專院校學生與教職員打造的現代化校務系統代理介面，提供響應式設計、深淺色主題切換與更順暢便利的校園數位體驗。
-          </p>
         </div>
 
         {/* 隱私與安全說明 */}
